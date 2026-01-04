@@ -25,11 +25,18 @@ public class ImageDownloader {
     private static final String UNSPLASH_API_BASE = "https://api.unsplash.com";
     private static final String SEARCH_ENDPOINT = "/search/photos";
     private static final int DEFAULT_TIMEOUT_SECONDS = 30;
-    private static final int RATE_LIMIT_RETRY_DELAY_MS = 2000;
+    private static final int RATE_LIMIT_RETRY_DELAY_MS = 5000; // 5 seconds initial delay
+    private static final int MAX_RATE_LIMIT_RETRIES = 2; // Limit rate limit retries
+    private static final int UNSPLASH_HOURLY_LIMIT = 50; // Unsplash free tier limit
+    private static final long ONE_HOUR_MS = 60 * 60 * 1000; // 1 hour in milliseconds
     
     private final OkHttpClient httpClient;
     private String accessKey;
     private int maxRetries;
+    
+    // Rate limit tracking
+    private int requestCount = 0;
+    private long rateLimitWindowStart = 0;
     
     /**
      * Creates an ImageDownloader with default settings.
@@ -41,6 +48,7 @@ public class ImageDownloader {
             .writeTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .build();
         this.maxRetries = 3;
+        this.rateLimitWindowStart = System.currentTimeMillis();
     }
     
     /**
@@ -51,6 +59,7 @@ public class ImageDownloader {
     public ImageDownloader(OkHttpClient httpClient) {
         this.httpClient = httpClient;
         this.maxRetries = 3;
+        this.rateLimitWindowStart = System.currentTimeMillis();
     }
     
     /**
@@ -121,6 +130,9 @@ public class ImageDownloader {
             return new String[0];
         }
         
+        // Check rate limit before making request
+        checkRateLimit();
+        
         // Build the API URL
         HttpUrl url = HttpUrl.parse(UNSPLASH_API_BASE + SEARCH_ENDPOINT)
             .newBuilder()
@@ -135,11 +147,86 @@ public class ImageDownloader {
             .build();
         
         // Execute request with retry logic
-        return executeWithRetry(() -> {
+        String[] results = executeWithRetry(() -> {
             try (Response response = httpClient.newCall(request).execute()) {
                 return handleSearchResponse(response, count);
             }
         });
+        
+        // Increment request count after successful request
+        incrementRequestCount();
+        
+        return results;
+    }
+    
+    /**
+     * Checks if we're approaching the rate limit and sleeps if necessary.
+     * Unsplash free tier allows 50 requests per hour.
+     */
+    private void checkRateLimit() {
+        long currentTime = System.currentTimeMillis();
+        long elapsedTime = currentTime - rateLimitWindowStart;
+        
+        // If more than an hour has passed, reset the counter
+        if (elapsedTime >= ONE_HOUR_MS) {
+            requestCount = 0;
+            rateLimitWindowStart = currentTime;
+            return;
+        }
+        
+        // If we've hit the limit, wait until the hour is up
+        if (requestCount >= UNSPLASH_HOURLY_LIMIT) {
+            long remainingTime = ONE_HOUR_MS - elapsedTime;
+            long remainingMinutes = remainingTime / (60 * 1000);
+            long remainingSeconds = (remainingTime % (60 * 1000)) / 1000;
+            
+            System.out.println();
+            System.out.println("========================================");
+            System.out.println("RATE LIMIT REACHED");
+            System.out.println("========================================");
+            System.out.println("Unsplash free tier allows " + UNSPLASH_HOURLY_LIMIT + " requests per hour.");
+            System.out.println("We've made " + requestCount + " requests in the current hour.");
+            System.out.println("Waiting " + remainingMinutes + " minutes and " + remainingSeconds + " seconds");
+            System.out.println("until the rate limit window resets...");
+            System.out.println("========================================");
+            System.out.println();
+            
+            try {
+                Thread.sleep(remainingTime);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Interrupted while waiting for rate limit reset", e);
+            }
+            
+            // Reset counter after waiting
+            requestCount = 0;
+            rateLimitWindowStart = System.currentTimeMillis();
+            
+            System.out.println("Rate limit window reset. Resuming downloads...");
+            System.out.println();
+        }
+    }
+    
+    /**
+     * Increments the request count for rate limit tracking.
+     */
+    private void incrementRequestCount() {
+        requestCount++;
+    }
+    
+    /**
+     * Gets the current request count (for testing purposes).
+     */
+    public int getRequestCount() {
+        return requestCount;
+    }
+    
+    /**
+     * Resets the rate limit tracking (for testing purposes).
+     */
+    public void resetRateLimitTracking() {
+        requestCount = 0;
+        rateLimitWindowStart = System.currentTimeMillis();
     }
     
     /**
@@ -147,9 +234,9 @@ public class ImageDownloader {
      */
     private String[] handleSearchResponse(Response response, int count) throws IOException {
         if (!response.isSuccessful()) {
-            if (response.code() == 429) {
-                // Rate limit exceeded
-                throw new RateLimitException("Unsplash API rate limit exceeded");
+            if (response.code() == 429 || response.code() == 403) {
+                // Rate limit exceeded (429 is standard, but Unsplash also uses 403)
+                throw new RateLimitException("Unsplash API rate limit exceeded (code: " + response.code() + ")");
             } else if (response.code() == 401) {
                 throw new IOException("Unauthorized: Invalid API key");
             } else {
@@ -238,26 +325,37 @@ public class ImageDownloader {
      */
     private <T> T executeWithRetry(RetryableOperation<T> operation) throws IOException {
         int attempts = 0;
+        int rateLimitAttempts = 0;
         IOException lastException = null;
         
         while (attempts < maxRetries) {
             try {
                 return operation.execute();
             } catch (RateLimitException e) {
-                // Rate limit - wait and retry
+                // Rate limit - use limited retries with longer backoff
+                rateLimitAttempts++;
                 attempts++;
                 lastException = e;
                 
+                if (rateLimitAttempts >= MAX_RATE_LIMIT_RETRIES) {
+                    // Don't keep retrying rate limits - fail fast
+                    System.err.println("Rate limit exceeded after " + rateLimitAttempts + " attempts. " +
+                                     "Unsplash free tier allows 50 requests per hour.");
+                    throw e;
+                }
+                
                 if (attempts < maxRetries) {
+                    int delayMs = RATE_LIMIT_RETRY_DELAY_MS * rateLimitAttempts; // Linear backoff
+                    System.err.println("Rate limit hit, waiting " + (delayMs / 1000) + " seconds before retry...");
                     try {
-                        Thread.sleep(RATE_LIMIT_RETRY_DELAY_MS * attempts); // Exponential backoff
+                        Thread.sleep(delayMs);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         throw new IOException("Interrupted during retry delay", ie);
                     }
                 }
             } catch (IOException e) {
-                // Other IO errors - retry
+                // Other IO errors - retry with shorter delay
                 attempts++;
                 lastException = e;
                 
