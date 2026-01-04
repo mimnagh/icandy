@@ -66,8 +66,8 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - **Property 5: Configured Image Download Count**
     - **Validates: Requirements 2.5, 2.6**
 
-- [ ] 4. Implement association management and persistence
-  - [ ] 4.1 Create AssociationManager class
+- [x] 4. Implement association management and persistence
+  - [x] 4.1 Create AssociationManager class
     - Implement addAssociation() to store word-image mappings
     - Implement getImagesForWord() to retrieve images for a word
     - Implement saveToFile() to serialize associations to JSON
