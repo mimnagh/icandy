@@ -102,16 +102,141 @@ mvn exec:java -Dexec.mainClass="com.icandy.build.BuildMain" -Dexec.args="<path-t
 
 ### Run Phase
 
-Run the Processing sketch to display the visual experience:
+After completing the build phase, run the Processing sketch to display the visual experience.
+
+**Prerequisites:**
+- Build phase must be completed first (associations.json must exist)
+- Text file used in build phase
+
+**Option 1: Run with Maven (Recommended for Development)**
 
 ```bash
-# Instructions will be added after implementation
+mvn exec:java -Dexec.mainClass="com.icandy.run.iCandySketch" \
+  -Dexec.args="<path-to-text-file> [path-to-config.json]"
 ```
+
+Example:
+```bash
+mvn exec:java -Dexec.mainClass="com.icandy.run.iCandySketch" \
+  -Dexec.args="data/Maryhadalittlelamb.txt ~/.icandy/config.json"
+```
+
+**Option 2: Run with Java directly**
+
+First, ensure all dependencies are in the classpath:
+
+```bash
+# Build the project with dependencies
+mvn clean package
+
+# Run the sketch
+java -cp "target/icandy-1.0.0.jar:target/lib/*" \
+  com.icandy.run.iCandySketch \
+  <path-to-text-file> [path-to-config.json]
+```
+
+**Option 3: Quick Start (using default config)**
+
+If you've set up `~/.icandy/config.json`, you can omit the config path:
+
+```bash
+mvn exec:java -Dexec.mainClass="com.icandy.run.iCandySketch" \
+  -Dexec.args="data/Maryhadalittlelamb.txt"
+```
+
+The sketch will:
+1. Load configuration from `config.json` (or use defaults)
+2. Load word-image associations from `data/associations.json`
+3. Parse the text file into phrases
+4. Open a 1280x720 window
+5. Display phrases with associated images
+6. Automatically advance through phrases
+7. Respond to keyboard navigation (arrow keys)
+
+**Note:** Beat detection (audio-synchronized image swapping) will be available after Task 10 is completed.
 
 ### Keyboard Controls
 
 - **Right Arrow**: Advance to next phrase
 - **Left Arrow**: Go back to previous phrase
+
+## Complete Example Workflow
+
+Here's a complete example from start to finish:
+
+### 1. Setup (One-time)
+
+```bash
+# Run the setup script
+./scripts/setup-config.sh
+
+# Edit your Unsplash credentials
+nano ~/.icandy/unsplash.properties
+# Add your application_id, secret_key, and access_key
+```
+
+### 2. Build Phase (Process Text and Download Images)
+
+```bash
+# Build the project
+mvn clean install
+
+# Run build phase on sample text
+mvn exec:java -Dexec.mainClass="com.icandy.build.BuildMain" \
+  -Dexec.args="data/Maryhadalittlelamb.txt"
+```
+
+This will:
+- Parse the text into phrases and words
+- Filter out stop words
+- Download 5 images per content word (configurable)
+- Save associations to `data/associations.json`
+- Store images in `data/images/`
+
+### 3. Run Phase (Display Visual Experience)
+
+```bash
+# Run the Processing sketch
+mvn exec:java -Dexec.mainClass="com.icandy.run.iCandySketch" \
+  -Dexec.args="data/Maryhadalittlelamb.txt ~/.icandy/config.json"
+```
+
+This will:
+- Open a 1280x720 window
+- Display phrases like movie subtitles
+- Show associated images for each phrase
+- Automatically advance through phrases
+- Allow navigation with arrow keys
+
+### 4. Interact
+
+- Watch phrases advance automatically (timing based on word count)
+- Press **Right Arrow** to skip ahead
+- Press **Left Arrow** to go back
+- Close the window to exit
+
+## Using Your Own Text
+
+Create a text file with your content:
+
+```bash
+echo "The quick brown fox jumps over the lazy dog." > mytext.txt
+echo "This is a test of the visual text processor." >> mytext.txt
+```
+
+Run the build phase:
+
+```bash
+mvn exec:java -Dexec.mainClass="com.icandy.build.BuildMain" \
+  -Dexec.args="mytext.txt"
+```
+
+Run the visual display:
+
+```bash
+mvn exec:java -Dexec.mainClass="com.icandy.run.iCandySketch" \
+  -Dexec.args="mytext.txt"
+```
 
 ## Configuration Options
 
@@ -187,6 +312,50 @@ open data/images/test_sunset.jpg
 
 ## Troubleshooting
 
+### Build Phase Issues
+
+**"Associations file not found" error:**
+- Make sure you've run the build phase first
+- Check that `data/associations.json` exists
+- Verify the path in your config.json matches the actual file location
+
+**"Text file not found" error:**
+- Verify the text file path is correct
+- Use absolute paths or paths relative to where you run the command
+
+**Unsplash API errors:**
+- Verify your credentials in `~/.icandy/unsplash.properties`
+- Check you haven't exceeded the rate limit (50 requests/hour for free tier)
+- Ensure you have internet connectivity
+
+### Run Phase Issues
+
+**Window doesn't open:**
+- Ensure Processing core library is in the classpath
+- Try running with Maven instead of direct Java command
+- Check that Java has permission to create windows on your system
+
+**"No phrases found" error:**
+- Verify your text file contains actual text
+- Check that the text has sentence-ending punctuation (. ! ?)
+- Ensure the file encoding is UTF-8
+
+**Images not displaying:**
+- Check that the build phase completed successfully
+- Verify images exist in `data/images/`
+- Check logs for missing image warnings
+- Ensure image paths in `data/associations.json` are correct
+
+**Phrases advancing too quickly/slowly:**
+- Adjust `msPerWord` in config.json (default: 300ms per word)
+- Adjust `minPhraseDuration` and `maxPhraseDuration` for bounds
+- Formula: duration = (wordCount × msPerWord) + 1000ms
+
+**Keyboard navigation not working:**
+- Check that `enableKeyboardNavigation` is true in config.json
+- Ensure the Processing window has focus (click on it)
+- Try clicking in the window before pressing arrow keys
+
 ### Audio Input Issues
 
 If beat detection fails, the system will fall back to timed image transitions.
@@ -198,6 +367,18 @@ If images are missing during run phase, phrases will display without images. Che
 ### API Rate Limiting
 
 Unsplash free tier allows 50 requests per hour. If you hit the limit, wait or upgrade your API key.
+
+### Performance Issues
+
+**Low frame rate:**
+- Reduce `simultaneousImageCount` in config.json
+- Reduce `frameRate` (default: 30)
+- Use smaller images or fewer images per word
+
+**High memory usage:**
+- Reduce `imagesPerWord` in build phase
+- Reduce `simultaneousImageCount` in run phase
+- Close other applications
 
 ## License
 

@@ -234,8 +234,8 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - Test fallback behavior when audio unavailable
     - _Requirements: 5.1, 5.2, 8.2, 8.3_
 
-- [ ] 11. Implement phrase sequencing with keyboard navigation
-  - [ ] 11.1 Create PhraseSequencer class
+- [x] 11. Implement phrase sequencing with keyboard navigation
+  - [x] 11.1 Create PhraseSequencer class
     - Implement getCurrentPhrase() and getWordsInCurrentPhrase()
     - Implement advance() to move to next phrase
     - Implement goBack() to move to previous phrase
@@ -264,18 +264,18 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - Test looping behavior
     - _Requirements: 4.1, 4.5, 4.7, 4.8, 4.9_
 
-- [ ] 12. Checkpoint - Ensure run phase component tests pass
+- [x] 12. Checkpoint - Ensure run phase component tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 13. Implement main Processing sketch (iCandySketch)
-  - [ ] 13.1 Create iCandySketch class extending PApplet
+- [x] 13. Implement main Processing sketch (iCandySketch)
+  - [x] 13.1 Create iCandySketch class extending PApplet
     - Implement setup() to initialize all components
     - Load configuration and associations
     - Set up audio input and beat detection
     - Initialize display managers and sequencer
     - _Requirements: 7.1, 7.2, 7.5_
 
-  - [ ] 13.2 Implement draw() loop
+  - [x] 13.2 Implement draw() loop
     - Update beat detection state
     - Check for automatic phrase advancement
     - Render current phrase via TextDisplayManager
@@ -284,7 +284,7 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - Maintain target frame rate
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.5, 7.3_
 
-  - [ ] 13.3 Implement keyPressed() for keyboard navigation
+  - [x] 13.3 Implement keyPressed() for keyboard navigation
     - Handle right arrow key to advance phrase
     - Handle left arrow key to go back to previous phrase
     - Reset phrase timer on manual navigation
