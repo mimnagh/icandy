@@ -15,8 +15,8 @@ This implementation plan breaks down the iCandy visual text processor into discr
   - Add Processing core library and Sound library dependencies
   - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 2. Implement text parsing and stop word filtering
-  - [ ] 2.1 Create TextParser class with phrase and word extraction
+- [-] 2. Implement text parsing and stop word filtering
+  - [x] 2.1 Create TextParser class with phrase and word extraction
     - Implement parseIntoPhrases() to split text by sentences
     - Implement parseIntoWords() to extract individual words
     - Implement mapPhrasesToWords() to create phrase-to-content-words mapping
@@ -27,7 +27,7 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - **Property 1: Text Parsing Completeness**
     - **Validates: Requirements 1.1, 1.3**
 
-  - [ ] 2.3 Implement stop word filtering
+  - [x] 2.3 Implement stop word filtering
     - Load stop words from configuration file
     - Implement isStopWord() method
     - Implement filterStopWords() to remove stop words from word list

@@ -23,22 +23,26 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <processing.version>4.3</processing.version>
+        <processing.version>4.4.4</processing.version>
     </properties>
 
     <dependencies>
-        <!-- Processing Core Library -->
+        <!-- Processing Core Library 4.4.4 via JitPack -->
+        <!-- Excluding JOGL dependencies that are causing timeout issues -->
         <dependency>
-            <groupId>org.processing</groupId>
-            <artifactId>core</artifactId>
-            <version>${processing.version}</version>
-        </dependency>
-
-        <!-- Processing Sound Library -->
-        <dependency>
-            <groupId>com.github.processing</groupId>
-            <artifactId>processing-sound</artifactId>
-            <version>2.3.2</version>
+            <groupId>com.github.micycle1</groupId>
+            <artifactId>processing-core-4</artifactId>
+            <version>4.4.4</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jogamp.jogl</groupId>
+                    <artifactId>jogl-all-main</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jogamp.gluegen</groupId>
+                    <artifactId>gluegen-rt-main</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- JSON Processing -->
@@ -70,6 +74,8 @@
             <version>1.8.2</version>
             <scope>test</scope>
         </dependency>
+        
+        <!-- Processing Sound and JOGL will be added later when needed for run phase -->
     </dependencies>
 
     <build>
@@ -117,10 +123,17 @@
     </build>
 
     <repositories>
-        <!-- Processing Repository -->
+        <!-- JitPack Repository for Processing Core 4.4.4 -->
         <repository>
-            <id>clojars</id>
-            <url>https://repo.clojars.org/</url>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+        <!-- JogAmp Repository for JOGL dependencies -->
+        <repository>
+            <id>jogamp-remote</id>
+            <name>jogamp test mirror</name>
+            <url>https://www.jogamp.org/deployment/maven/</url>
+            <layout>default</layout>
         </repository>
     </repositories>
 </project>

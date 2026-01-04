@@ -32,6 +32,9 @@ buildNumber.properties
 *.rar
 hs_err_pid*
 
+# jqwik property-based testing
+.jqwik-database
+
 # IDE
 .idea/
 *.iml
