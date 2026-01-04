@@ -108,6 +108,42 @@ class TextParserTest {
         assertEquals(0, phrases.length);
     }
     
+    @Test
+    void testMinimumWordLength() {
+        // Words with length < 3 should be treated as stop words
+        assertTrue(parser.isStopWord("a"));
+        assertTrue(parser.isStopWord("I"));
+        assertTrue(parser.isStopWord("is"));
+        assertTrue(parser.isStopWord("at"));
+        assertTrue(parser.isStopWord("to"));
+        assertTrue(parser.isStopWord("be"));
+        assertTrue(parser.isStopWord("or"));
+        
+        // Words with length >= 3 should not be automatically filtered
+        assertFalse(parser.isStopWord("cat"));
+        assertFalse(parser.isStopWord("dog"));
+        assertFalse(parser.isStopWord("run"));
+        assertFalse(parser.isStopWord("sun"));
+    }
+    
+    @Test
+    void testFilterShortWords() {
+        String[] words = {"I", "am", "a", "cat", "in", "the", "sun"};
+        String[] filtered = parser.filterStopWords(words);
+        
+        // Only "cat" and "sun" should remain (length >= 3 and not in stop words list)
+        assertNotNull(filtered);
+        assertEquals(2, filtered.length);
+        assertTrue(containsWord(filtered, "cat"));
+        assertTrue(containsWord(filtered, "sun"));
+        
+        // Short words should be filtered out
+        assertFalse(containsWord(filtered, "I"));
+        assertFalse(containsWord(filtered, "am"));
+        assertFalse(containsWord(filtered, "a"));
+        assertFalse(containsWord(filtered, "in"));
+    }
+    
     private boolean containsWord(String[] words, String target) {
         for (String word : words) {
             if (word.equalsIgnoreCase(target)) {

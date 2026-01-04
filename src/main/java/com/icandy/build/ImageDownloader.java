@@ -48,7 +48,9 @@ public class ImageDownloader {
             .writeTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .build();
         this.maxRetries = 3;
-        this.rateLimitWindowStart = System.currentTimeMillis();
+        // Initialize rate limit window to 0 - will be set on first request
+        this.rateLimitWindowStart = 0;
+        this.requestCount = 0;
     }
     
     /**
@@ -59,7 +61,9 @@ public class ImageDownloader {
     public ImageDownloader(OkHttpClient httpClient) {
         this.httpClient = httpClient;
         this.maxRetries = 3;
-        this.rateLimitWindowStart = System.currentTimeMillis();
+        // Initialize rate limit window to 0 - will be set on first request
+        this.rateLimitWindowStart = 0;
+        this.requestCount = 0;
     }
     
     /**
@@ -164,6 +168,12 @@ public class ImageDownloader {
      * Unsplash free tier allows 50 requests per hour.
      */
     private void checkRateLimit() {
+        // If this is the first request, initialize the window
+        if (rateLimitWindowStart == 0) {
+            rateLimitWindowStart = System.currentTimeMillis();
+            return;
+        }
+        
         long currentTime = System.currentTimeMillis();
         long elapsedTime = currentTime - rateLimitWindowStart;
         
@@ -185,7 +195,7 @@ public class ImageDownloader {
             System.out.println("RATE LIMIT REACHED");
             System.out.println("========================================");
             System.out.println("Unsplash free tier allows " + UNSPLASH_HOURLY_LIMIT + " requests per hour.");
-            System.out.println("We've made " + requestCount + " requests in the current hour.");
+            System.out.println("We've made " + requestCount + " requests in this session.");
             System.out.println("Waiting " + remainingMinutes + " minutes and " + remainingSeconds + " seconds");
             System.out.println("until the rate limit window resets...");
             System.out.println("========================================");

@@ -152,71 +152,159 @@ public class BuildOrchestrator {
      * @throws IOException if any file operations fail
      */
     public void runBuild(String textFilePath) throws IOException {
-        System.out.println("=== iCandy Build Phase ===");
-        System.out.println("Text file: " + textFilePath);
-        System.out.println();
-        
-        // Step 1: Read and validate text file
-        System.out.println("[1/5] Reading text file...");
-        String textContent = readTextFile(textFilePath);
-        System.out.println("Read " + textContent.length() + " characters");
-        System.out.println();
-        
-        // Step 2: Parse text into phrases and words
-        System.out.println("[2/5] Parsing text...");
-        String[] phrases = textParser.parseIntoPhrases(textContent);
-        String[] allWords = textParser.parseIntoWords(textContent);
-        String[] contentWords = textParser.filterStopWords(allWords);
-        
-        System.out.println("Found " + phrases.length + " phrases");
-        System.out.println("Found " + allWords.length + " unique words");
-        System.out.println("Found " + contentWords.length + " content words (after filtering stop words)");
-        System.out.println();
-        
-        if (contentWords.length == 0) {
-            System.err.println("Warning: No content words found after filtering. Nothing to process.");
-            return;
+        try {
+            System.out.println("=== iCandy Build Phase ===");
+            System.out.println("Text file: " + textFilePath);
+            System.out.println();
+            
+            // Step 1: Read and validate text file
+            System.out.println("[1/6] Reading text file...");
+            String textContent = readTextFile(textFilePath);
+            System.out.println("Read " + textContent.length() + " characters");
+            System.out.println();
+            
+            // Step 2: Load existing associations if available
+            System.out.println("[2/6] Checking for existing associations...");
+            loadExistingAssociations();
+            
+            // Step 3: Parse text into phrases and words
+            System.out.println("[3/6] Parsing text...");
+            String[] phrases = textParser.parseIntoPhrases(textContent);
+            String[] allWords = textParser.parseIntoWords(textContent);
+            String[] contentWords = textParser.filterStopWords(allWords);
+            
+            System.out.println("Found " + phrases.length + " phrases");
+            System.out.println("Found " + allWords.length + " unique words");
+            System.out.println("Found " + contentWords.length + " content words (after filtering stop words)");
+            System.out.println();
+            
+            if (contentWords.length == 0) {
+                System.err.println("Warning: No content words found after filtering. Nothing to process.");
+                return;
+            }
+            
+            // Step 4: Create phrase-to-words mapping
+            System.out.println("[4/6] Creating phrase-to-words mapping...");
+            Map<Integer, String[]> phraseToWords = textParser.mapPhrasesToWords(phrases);
+            System.out.println("Created mappings for " + phraseToWords.size() + " phrases");
+            System.out.println();
+            
+            // Step 5: Download images for words that need them
+            System.out.println("[5/6] Downloading images...");
+            
+            // Filter out words that already have sufficient images
+            List<String> wordsNeedingImages = new ArrayList<>();
+            int skippedWords = 0;
+            
+            for (String word : contentWords) {
+                String[] existingImages = associationManager.getImagesForWord(word);
+                if (existingImages.length >= imagesPerWord) {
+                    skippedWords++;
+                } else {
+                    wordsNeedingImages.add(word);
+                }
+            }
+            
+            if (skippedWords > 0) {
+                System.out.println("Skipping " + skippedWords + " words that already have sufficient images");
+            }
+            
+            if (wordsNeedingImages.isEmpty()) {
+                System.out.println("All words already have sufficient images. No downloads needed.");
+            } else {
+                System.out.println("Processing " + wordsNeedingImages.size() + " words (" + imagesPerWord + " images per word)");
+                System.out.println();
+                
+                totalWords = wordsNeedingImages.size();
+                processedWords = 0;
+                failedWords = 0;
+                failedWordsList.clear();
+                
+                for (String word : wordsNeedingImages) {
+                    processWord(word);
+                }
+                
+                System.out.println();
+                System.out.println("Download complete:");
+                System.out.println("  - Successfully processed: " + (processedWords - failedWords) + " words");
+                System.out.println("  - Failed: " + failedWords + " words");
+                
+                if (failedWords > 0) {
+                    System.out.println("  - Failed words: " + String.join(", ", failedWordsList));
+                }
+            }
+            System.out.println();
+            
+            // Step 6: Save associations to file
+            System.out.println("[6/6] Saving associations...");
+            associationManager.saveToFile(associationsFile);
+            System.out.println("Saved associations to: " + associationsFile);
+            System.out.println("Total words with images: " + associationManager.getWordCount());
+            System.out.println("Total images: " + associationManager.getImageCount());
+            System.out.println();
+            
+            System.out.println("=== Build Complete ===");
+            
+        } catch (Exception e) {
+            // Save whatever associations we have so far before re-throwing
+            System.err.println();
+            System.err.println("=== Build Failed ===");
+            System.err.println("Error: " + e.getMessage());
+            System.err.println();
+            
+            savePartialAssociations();
+            
+            // Re-throw the exception
+            if (e instanceof IOException) {
+                throw (IOException) e;
+            } else {
+                throw new IOException("Build failed: " + e.getMessage(), e);
+            }
         }
-        
-        // Step 3: Create phrase-to-words mapping
-        System.out.println("[3/5] Creating phrase-to-words mapping...");
-        Map<Integer, String[]> phraseToWords = textParser.mapPhrasesToWords(phrases);
-        System.out.println("Created mappings for " + phraseToWords.size() + " phrases");
-        System.out.println();
-        
-        // Step 4: Download images for each content word
-        System.out.println("[4/5] Downloading images...");
-        System.out.println("Processing " + contentWords.length + " content words (" + imagesPerWord + " images per word)");
-        System.out.println();
-        
-        totalWords = contentWords.length;
-        processedWords = 0;
-        failedWords = 0;
-        failedWordsList.clear();
-        
-        for (String word : contentWords) {
-            processWord(word);
+    }
+    
+    /**
+     * Saves partial associations when the build fails.
+     * This ensures that successfully downloaded images are not lost.
+     */
+    private void savePartialAssociations() {
+        try {
+            if (associationManager.getWordCount() > 0) {
+                System.err.println("Saving partial associations (" + 
+                    associationManager.getWordCount() + " words, " + 
+                    associationManager.getImageCount() + " images)...");
+                associationManager.saveToFile(associationsFile);
+                System.err.println("Partial associations saved to: " + associationsFile);
+                System.err.println("You can resume the build by running it again.");
+            } else {
+                System.err.println("No associations to save.");
+            }
+        } catch (IOException saveError) {
+            System.err.println("Warning: Failed to save partial associations: " + saveError.getMessage());
         }
-        
-        System.out.println();
-        System.out.println("Download complete:");
-        System.out.println("  - Successfully processed: " + (processedWords - failedWords) + " words");
-        System.out.println("  - Failed: " + failedWords + " words");
-        
-        if (failedWords > 0) {
-            System.out.println("  - Failed words: " + String.join(", ", failedWordsList));
+        System.err.println();
+    }
+    
+    /**
+     * Loads existing associations from file if it exists.
+     * This allows incremental builds without re-downloading existing images.
+     */
+    private void loadExistingAssociations() {
+        try {
+            Path associationsPath = Paths.get(associationsFile);
+            if (Files.exists(associationsPath)) {
+                associationManager.loadFromFile(associationsFile);
+                System.out.println("Loaded existing associations: " + 
+                    associationManager.getWordCount() + " words, " + 
+                    associationManager.getImageCount() + " images");
+            } else {
+                System.out.println("No existing associations found. Starting fresh.");
+            }
+        } catch (IOException e) {
+            System.err.println("Warning: Could not load existing associations: " + e.getMessage());
+            System.err.println("Starting with empty associations.");
         }
         System.out.println();
-        
-        // Step 5: Save associations to file
-        System.out.println("[5/5] Saving associations...");
-        associationManager.saveToFile(associationsFile);
-        System.out.println("Saved associations to: " + associationsFile);
-        System.out.println("Total words with images: " + associationManager.getWordCount());
-        System.out.println("Total images: " + associationManager.getImageCount());
-        System.out.println();
-        
-        System.out.println("=== Build Complete ===");
     }
     
     /**
@@ -245,6 +333,7 @@ public class BuildOrchestrator {
     /**
      * Processes a single word: searches for images and downloads them.
      * Handles failures gracefully and continues processing.
+     * Saves associations incrementally after each successful word.
      */
     private void processWord(String word) {
         processedWords++;
@@ -287,6 +376,14 @@ public class BuildOrchestrator {
                 // Add association
                 associationManager.addAssociation(word, downloadedPaths.toArray(new String[0]));
                 System.out.println("Downloaded " + successCount + "/" + imageUrls.length + " images");
+                
+                // Save associations incrementally after each successful word
+                // This allows safe interruption without losing progress
+                try {
+                    associationManager.saveToFile(associationsFile);
+                } catch (IOException saveError) {
+                    System.err.println("Warning: Failed to save associations: " + saveError.getMessage());
+                }
             }
             
         } catch (IOException e) {

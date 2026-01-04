@@ -41,11 +41,12 @@ iCandy is a Processing.org-based application that creates dynamic visual experie
 1. WHEN the build phase is invoked via command-line, THE iCandy SHALL accept a text file path as input
 2. WHEN the build phase starts, THE iCandy SHALL iterate through all unique words in the text script
 3. WHEN processing a word, THE iCandy SHALL skip stop words (common words like "a", "the", "that") and only process content words
-4. WHEN processing a content word, THE iCandy SHALL perform an image lookup using an image search service
-5. WHERE the number of images per word is configured, THE iCandy SHALL download exactly that number of images for each word
-6. WHEN downloading images, THE iCandy SHALL store them locally with references to their associated words
-7. WHEN an image download fails, THE iCandy SHALL log the error and continue processing remaining words
-8. WHEN the build phase completes, THE iCandy SHALL persist all image associations for use in the run phase
+4. WHEN processing a word, THE iCandy SHALL treat any word with length less than 3 characters as a stop word
+5. WHEN processing a content word, THE iCandy SHALL perform an image lookup using an image search service
+6. WHERE the number of images per word is configured, THE iCandy SHALL download exactly that number of images for each word
+7. WHEN downloading images, THE iCandy SHALL store them locally with references to their associated words
+8. WHEN an image download fails, THE iCandy SHALL log the error and continue processing remaining words
+9. WHEN the build phase completes, THE iCandy SHALL persist all image associations for use in the run phase
 
 ### Requirement 3: Image Association Storage
 

@@ -100,6 +100,30 @@ Or with Maven:
 mvn exec:java -Dexec.mainClass="com.icandy.build.BuildMain" -Dexec.args="<path-to-text-file>"
 ```
 
+**Incremental Builds:**
+
+The build phase is incremental - it will skip downloading images for words that already have sufficient images. This means:
+- Running the build phase multiple times on the same text is fast (only new words are processed)
+- You can add new text to your script and only download images for new words
+- Existing associations are preserved and merged with new ones
+- **Associations are saved after each successful word download**, so you can safely interrupt the build process (Ctrl+C) without losing progress
+
+Example:
+```bash
+# First build: downloads images for "hello" and "world"
+mvn exec:java -Dexec.mainClass="com.icandy.build.BuildMain" \
+  -Dexec.args="data/text1.txt"
+
+# Second build: skips "hello" and "world", only downloads for "test"
+mvn exec:java -Dexec.mainClass="com.icandy.build.BuildMain" \
+  -Dexec.args="data/text2.txt"
+
+# If you interrupt the build (Ctrl+C), all successfully downloaded words are saved
+# Just run the build again to continue from where you left off
+```
+
+This saves API requests and time when iterating on your text scripts.
+
 ### Run Phase
 
 After completing the build phase, run the Processing sketch to display the visual experience.
@@ -111,6 +135,14 @@ After completing the build phase, run the Processing sketch to display the visua
 **Option 1: Run with Maven (Recommended for Development)**
 
 ```bash
+mvn exec:java -Dexec.mainClass="com.icandy.run.iCandySketch" \
+  -Dexec.args="<path-to-text-file> [path-to-config.json]"
+```
+
+For large text files or many images, you may need to increase the Java heap size:
+
+```bash
+export MAVEN_OPTS="-Xmx2g"
 mvn exec:java -Dexec.mainClass="com.icandy.run.iCandySketch" \
   -Dexec.args="<path-to-text-file> [path-to-config.json]"
 ```
@@ -129,8 +161,8 @@ First, ensure all dependencies are in the classpath:
 # Build the project with dependencies
 mvn clean package
 
-# Run the sketch
-java -cp "target/icandy-1.0.0.jar:target/lib/*" \
+# Run the sketch with increased heap size
+java -Xmx2g -cp "target/icandy-1.0.0.jar:target/lib/*" \
   com.icandy.run.iCandySketch \
   <path-to-text-file> [path-to-config.json]
 ```
@@ -375,10 +407,13 @@ Unsplash free tier allows 50 requests per hour. If you hit the limit, wait or up
 - Reduce `frameRate` (default: 30)
 - Use smaller images or fewer images per word
 
-**High memory usage:**
-- Reduce `imagesPerWord` in build phase
-- Reduce `simultaneousImageCount` in run phase
+**High memory usage / OutOfMemoryError:**
+- Increase Java heap size: `export MAVEN_OPTS="-Xmx2g"` before running
+- Or use: `java -Xmx2g -cp ...` when running directly
+- Reduce `imagesPerWord` in build phase (fewer images per word)
+- Reduce `simultaneousImageCount` in run phase (fewer images displayed at once)
 - Close other applications
+- The system now caches images intelligently to avoid reloading, but large text files with many unique words may still require more memory
 
 ## License
 

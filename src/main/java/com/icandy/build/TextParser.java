@@ -97,6 +97,9 @@ public class TextParser {
     
     /**
      * Checks if a word is a stop word.
+     * A word is considered a stop word if:
+     * - It's in the stop words list, OR
+     * - It has length less than 3 characters
      * 
      * @param word The word to check (case-insensitive)
      * @return true if the word is a stop word, false otherwise
@@ -104,6 +107,10 @@ public class TextParser {
     public boolean isStopWord(String word) {
         if (word == null) {
             return false;
+        }
+        // Treat words with length < 3 as stop words
+        if (word.length() < 3) {
+            return true;
         }
         return stopWords.contains(word.toLowerCase());
     }

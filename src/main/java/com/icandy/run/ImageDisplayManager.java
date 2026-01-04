@@ -85,7 +85,7 @@ public class ImageDisplayManager {
      * 
      * This method:
      * - Retrieves image paths for each word from the association manager
-     * - Preloads images into cache
+     * - Preloads images into cache (only if not already cached)
      * - Selects which words to display if there are more words than display slots
      * - Initializes display slots with images
      * 
@@ -110,9 +110,13 @@ public class ImageDisplayManager {
             }
         }
         
-        // Preload all images for these words
+        // Preload images for words that aren't already cached
         for (Map.Entry<String, List<String>> entry : wordToImagePaths.entrySet()) {
-            preloadImages(entry.getValue().toArray(new String[0]));
+            String word = entry.getKey();
+            // Only preload if this word isn't already in the cache
+            if (!imageCache.containsKey(word) || imageCache.get(word).isEmpty()) {
+                preloadImages(entry.getValue().toArray(new String[0]));
+            }
         }
         
         // Initialize display slots
@@ -472,5 +476,22 @@ public class ImageDisplayManager {
         this.imageCache.clear();
         this.currentImageIndices.clear();
         this.displaySlots.clear();
+    }
+    
+    /**
+     * Clears cached images for words that are not in the current phrase.
+     * This helps manage memory by removing images that are no longer needed.
+     */
+    public void clearUnusedImages() {
+        if (currentWords.length == 0) {
+            return;
+        }
+        
+        // Get set of current words
+        Set<String> currentWordSet = new HashSet<>(Arrays.asList(currentWords));
+        
+        // Remove cached images for words not in current phrase
+        imageCache.keySet().removeIf(word -> !currentWordSet.contains(word));
+        currentImageIndices.keySet().removeIf(word -> !currentWordSet.contains(word));
     }
 }
