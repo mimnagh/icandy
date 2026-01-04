@@ -1,0 +1,19 @@
+# Quarto
+/.quarto/
+/_site/
+/_book/
+*_files/
+/.luarc.json
+
+# Rendered outputs (uncomment if you want to commit these)
+*.html
+*.pdf
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
