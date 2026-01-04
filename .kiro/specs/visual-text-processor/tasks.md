@@ -87,15 +87,15 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - **Property 8: Image File Verification**
     - **Validates: Requirements 3.4**
 
-- [ ] 5. Implement build phase orchestration
-  - [ ] 5.1 Create BuildOrchestrator class
+- [x] 5. Implement build phase orchestration
+  - [x] 5.1 Create BuildOrchestrator class
     - Coordinate TextParser, ImageDownloader, and AssociationManager
     - Implement runBuild() workflow
     - Add progress reporting
     - Handle partial failures gracefully
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
 
-  - [ ] 5.2 Create BuildMain class for command-line interface
+  - [x] 5.2 Create BuildMain class for command-line interface
     - Implement main() method to accept command-line arguments
     - Parse text file path and optional config file path
     - Instantiate and invoke BuildOrchestrator
@@ -106,11 +106,46 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - **Property 4: Unique Word Processing**
     - **Validates: Requirements 2.2, 2.4**
 
-  - [ ]* 5.4 Write unit tests for BuildOrchestrator
+  - [x] 5.4 Write unit tests for BuildOrchestrator
     - Test complete build workflow with sample text
     - Test error handling and recovery
     - Test progress reporting
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
+
+  - [ ]* 5.4.1 Enhance BuildOrchestrator tests with specific assertions
+    - Add descriptive assertion messages to all tests
+    - Replace generic assertTrue/assertFalse with specific assertEquals where applicable
+    - Verify exact counts instead of just "greater than zero"
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
+
+  - [ ]* 5.4.2 Add test for associations file persistence
+    - Test that associations file is created after build
+    - Verify file can be loaded back into AssociationManager
+    - Validate word count and image count match expected values
+    - _Requirements: 2.6, 2.8, 3.2, 3.3_
+
+  - [ ]* 5.4.3 Add test for special characters in words
+    - Test words with punctuation, numbers, Unicode characters
+    - Verify sanitizeFilename() handles special characters correctly
+    - Ensure images are downloaded with sanitized filenames
+    - _Requirements: 1.4, 2.4_
+
+  - [ ]* 5.4.4 Extract magic numbers to constants
+    - Create test constants for imagesPerWord, maxRetries
+    - Use constants throughout test methods
+    - Improve test readability and maintainability
+
+  - [ ]* 5.4.5 Add test for configuration with extra fields
+    - Test config file with comments and unknown fields
+    - Verify system ignores unknown fields gracefully
+    - Ensure backward compatibility with config changes
+    - _Requirements: 6.4_
+
+  - [ ]* 5.4.6 Add test for concurrent builds
+    - Test multiple BuildOrchestrator instances running simultaneously
+    - Verify no file conflicts or race conditions
+    - Ensure each build maintains independent state
+    - _Requirements: 2.1, 2.6_
 
 - [ ] 6. Checkpoint - Ensure build phase tests pass
   - Ensure all tests pass, ask the user if questions arise.
