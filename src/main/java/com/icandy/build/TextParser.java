@@ -74,21 +74,21 @@ public class TextParser {
     }
     
     /**
-     * Parses text content into displayable phrases (sentences).
-     * Splits on sentence-ending punctuation (.!?) and trims whitespace.
+     * Parses text content into displayable phrases (lines).
+     * Splits on newlines and trims whitespace.
      * 
      * @param textContent The text to parse
-     * @return Array of phrases
+     * @return Array of phrases (one per line)
      */
     public String[] parseIntoPhrases(String textContent) {
         if (textContent == null || textContent.trim().isEmpty()) {
             return new String[0];
         }
         
-        // Split by sentence-ending punctuation
-        String[] rawPhrases = SENTENCE_PATTERN.split(textContent);
+        // Split by newlines (handles both \n and \r\n)
+        String[] rawPhrases = textContent.split("\\r?\\n");
         
-        // Filter out empty phrases and trim whitespace
+        // Filter out empty lines and trim whitespace
         return Arrays.stream(rawPhrases)
             .map(String::trim)
             .filter(phrase -> !phrase.isEmpty())

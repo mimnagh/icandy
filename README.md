@@ -369,7 +369,7 @@ open data/images/test_sunset.jpg
 
 **"No phrases found" error:**
 - Verify your text file contains actual text
-- Check that the text has sentence-ending punctuation (. ! ?)
+- Check that the text has line breaks (each line becomes a phrase)
 - Ensure the file encoding is UTF-8
 
 **Images not displaying:**

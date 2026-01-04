@@ -27,7 +27,7 @@ iCandy is a Processing.org-based application that creates dynamic visual experie
 #### Acceptance Criteria
 
 1. WHEN a text script file is provided, THE iCandy SHALL parse it into phrases and individual words
-2. WHEN parsing text, THE iCandy SHALL organize text into displayable phrases (sentences or natural phrase breaks)
+2. WHEN parsing text, THE iCandy SHALL organize text into displayable phrases by splitting on line breaks (one line per phrase)
 3. WHEN parsing text, THE iCandy SHALL extract individual words for image association while preserving phrase structure
 4. WHEN a text script contains special characters or punctuation, THE iCandy SHALL handle them appropriately for display
 5. WHEN an invalid or empty text file is provided, THE iCandy SHALL return a descriptive error message

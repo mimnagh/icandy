@@ -36,14 +36,14 @@ class TextParserTest {
     
     @Test
     void testParseIntoPhrases() {
-        String text = "Hello world! This is a test. How are you?";
+        String text = "Hello world!\nThis is a test.\nHow are you?";
         String[] phrases = parser.parseIntoPhrases(text);
         
         assertNotNull(phrases);
         assertEquals(3, phrases.length);
-        assertEquals("Hello world", phrases[0]);
-        assertEquals("This is a test", phrases[1]);
-        assertEquals("How are you", phrases[2]);
+        assertEquals("Hello world!", phrases[0]);
+        assertEquals("This is a test.", phrases[1]);
+        assertEquals("How are you?", phrases[2]);
     }
     
     @Test
