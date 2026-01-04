@@ -47,8 +47,8 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - **Property 3: Phrase Structure Preservation**
     - **Validates: Requirements 1.2**
 
-- [ ] 3. Implement image downloading and Unsplash API integration
-  - [ ] 3.1 Create ImageDownloader class
+- [x] 3. Implement image downloading and Unsplash API integration
+  - [x] 3.1 Create ImageDownloader class
     - Implement Unsplash API authentication
     - Implement searchImages() to query Unsplash API
     - Implement downloadImage() to save images locally

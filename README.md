@@ -141,6 +141,8 @@ Run the Processing sketch to display the visual experience:
 
 ## Testing
 
+### Automated Tests
+
 Run all tests:
 
 ```bash
@@ -158,6 +160,30 @@ Run only property-based tests:
 ```bash
 mvn test -Dtest="*PropertiesTest"
 ```
+
+### Manual Testing
+
+#### Test ImageDownloader
+
+Verify that the ImageDownloader can connect to Unsplash and download images:
+
+```bash
+mvn exec:java -Dexec.mainClass="com.icandy.build.ImageDownloaderManualTest"
+```
+
+This will:
+1. Load your Unsplash credentials
+2. Search for sample images
+3. Download a test image to `data/images/test_sunset.jpg`
+4. Verify error handling
+
+You can view the downloaded test image:
+
+```bash
+open data/images/test_sunset.jpg
+```
+
+**Note**: Make sure you've set up your Unsplash credentials in `~/.icandy/unsplash.properties` before running this test.
 
 ## Troubleshooting
 
