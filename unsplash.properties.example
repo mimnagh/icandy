@@ -1,0 +1,13 @@
+# Unsplash API Credentials
+# Copy this file to ~/.icandy/unsplash.properties
+# Get these from https://unsplash.com/developers
+# Create a new application and copy the values here
+
+# Application ID
+application_id=YOUR_APPLICATION_ID_HERE
+
+# Secret Key
+secret_key=YOUR_SECRET_KEY_HERE
+
+# Access Key (used for API authentication)
+access_key=YOUR_ACCESS_KEY_HERE

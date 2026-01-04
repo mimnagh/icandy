@@ -1,0 +1,25 @@
+{
+  "_comment": "Copy this file to ~/.icandy/config.json and customize as needed",
+  "build": {
+    "imagesPerWord": 5,
+    "unsplashPropertiesFile": "~/.icandy/unsplash.properties",
+    "imageStorageDir": "data/images",
+    "associationsFile": "data/associations.json",
+    "stopWordsFile": "data/stopwords.txt",
+    "maxRetries": 3
+  },
+  "run": {
+    "beatSensitivity": 100,
+    "minPhraseDuration": 2000,
+    "maxPhraseDuration": 10000,
+    "msPerWord": 300,
+    "frameRate": 30,
+    "textSize": 48,
+    "textColor": "#FFFFFF",
+    "backgroundColor": "#000000",
+    "enableKeyboardNavigation": true,
+    "simultaneousImageCount": 3,
+    "loopPhrases": true,
+    "audioSource": "microphone"
+  }
+}
