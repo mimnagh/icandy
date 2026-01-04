@@ -204,7 +204,7 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - **Property 15: Image Rotation Without Immediate Repetition**
     - **Validates: Requirements 5.4, 5.5**
 
-  - [ ]* 9.4 Write unit tests for ImageDisplayManager
+  - [x] 9.4 Write unit tests for ImageDisplayManager
     - Test image loading and caching
     - Test image layout and rendering
     - Test image swapping logic
