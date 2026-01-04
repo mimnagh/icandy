@@ -167,8 +167,8 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - Test default value fallback
     - _Requirements: 6.4_
 
-- [ ] 8. Implement text display management
-  - [ ] 8.1 Create TextDisplayManager class
+- [x] 8. Implement text display management
+  - [x] 8.1 Create TextDisplayManager class
     - Implement displayPhrase() to render text with subtitle styling
     - Implement calculateDisplayDuration() using the formula
     - Implement updatePhrase() for transitions
@@ -185,8 +185,8 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - Test text positioning
     - _Requirements: 4.2, 4.6_
 
-- [ ] 9. Implement image display management
-  - [ ] 9.1 Create ImageDisplayManager class
+- [-] 9. Implement image display management
+  - [x] 9.1 Create ImageDisplayManager class
     - Implement setImagesForPhrase() to load images for current phrase
     - Implement displayCurrentImages() to render images in layout
     - Implement swapImages() to change displayed images
