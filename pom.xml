@@ -76,7 +76,12 @@
             <scope>test</scope>
         </dependency>
         
-        <!-- Processing Sound and JOGL will be added later when needed for run phase -->
+        <!-- Processing Sound Library for beat detection -->
+        <!-- Note: Processing Sound library is not properly packaged for Maven. -->
+        <!-- The BeatDetectorWrapper uses reflection to load it at runtime if available. -->
+        <!-- To use beat detection, install the Sound library manually in Processing IDE -->
+        <!-- or add the library JAR to the classpath. The wrapper gracefully falls back -->
+        <!-- to non-audio mode if the library is not available. -->
     </dependencies>
 
     <build>

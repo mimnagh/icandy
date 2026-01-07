@@ -211,8 +211,8 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - Test handling of missing images
     - _Requirements: 4.3, 5.2, 5.3, 5.4, 8.1_
 
-- [ ] 10. Implement beat detection
-  - [ ] 10.1 Create BeatDetectorWrapper class
+- [x] 10. Implement beat detection
+  - [x] 10.1 Create BeatDetectorWrapper class
     - Initialize Processing Sound library's BeatDetector
     - Implement setup() to configure microphone audio input
     - Implement isBeat() to check for beat detection

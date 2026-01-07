@@ -52,6 +52,21 @@ icandy/
 
 This will create `~/.icandy/config.json` and `~/.icandy/unsplash.properties` from the example files.
 
+**Optional: Setup Processing Sound Library (for Beat Detection):**
+
+To enable audio beat detection, download the Processing Sound library:
+
+```bash
+./scripts/setup-sound-library.sh
+```
+
+This will:
+- Download the Processing Sound library from GitHub releases
+- Extract and place all JAR files (sound.jar, jsyn.jar, and dependencies) in the `lib/` directory
+- Provide instructions for adding them to your classpath
+
+The sound library is optional. If not installed, the application will run without beat detection features and fall back to timed image transitions.
+
 **Manual Setup:**
 
 1. Create your iCandy configuration directory:
@@ -139,6 +154,18 @@ mvn exec:java -Dexec.mainClass="com.icandy.run.iCandySketch" \
   -Dexec.args="<path-to-text-file> [path-to-config.json]"
 ```
 
+**Note**: When specifying paths with `~`, use the full expanded path or let the shell expand it:
+
+```bash
+# Option A: Use full path
+mvn exec:java -Dexec.mainClass="com.icandy.run.iCandySketch" \
+  -Dexec.args="data/Maryhadalittlelamb.txt $HOME/.icandy/config.json"
+
+# Option B: Let the application expand ~ (works now)
+mvn exec:java -Dexec.mainClass="com.icandy.run.iCandySketch" \
+  -Dexec.args="data/Maryhadalittlelamb.txt ~/.icandy/config.json"
+```
+
 For large text files or many images, you may need to increase the Java heap size:
 
 ```bash
@@ -166,6 +193,25 @@ java -Xmx2g -cp "target/icandy-1.0.0.jar:target/lib/*" \
   com.icandy.run.iCandySketch \
   <path-to-text-file> [path-to-config.json]
 ```
+
+**Option 2a: Run with Sound Library (for Beat Detection)**
+
+If you've installed the Processing Sound library using `./scripts/setup-sound-library.sh`:
+
+```bash
+# Run with sound library and all dependencies in classpath
+java -Xmx2g -cp "target/icandy-1.0.0.jar:lib/*:target/lib/*" \
+  com.icandy.run.iCandySketch \
+  <path-to-text-file> [path-to-config.json]
+```
+
+**Note**: The sound library requires multiple JAR files (sound.jar, jsyn.jar, and others), so use `lib/*` to include all of them.
+
+With the sound library, the application will:
+- Initialize audio input from your microphone
+- Detect beats in the audio
+- Swap images in sync with detected beats
+- Fall back to timed transitions if audio input fails
 
 **Option 3: Quick Start (using default config)**
 
@@ -367,6 +413,11 @@ open data/images/test_sunset.jpg
 - Try running with Maven instead of direct Java command
 - Check that Java has permission to create windows on your system
 
+**NullPointerException about "url" during startup:**
+- This is a harmless warning from Processing's icon loading
+- The application will continue to run normally
+- You can safely ignore this message
+
 **"No phrases found" error:**
 - Verify your text file contains actual text
 - Check that the text has line breaks (each line becomes a phrase)
@@ -389,6 +440,25 @@ open data/images/test_sunset.jpg
 - Try clicking in the window before pressing arrow keys
 
 ### Audio Input Issues
+
+**Beat detection not working:**
+- Ensure the Processing Sound library is installed: `./scripts/setup-sound-library.sh`
+- Add `lib/sound.jar` to your classpath when running
+- Check that your microphone is connected and working
+- Verify microphone permissions are granted to Java
+- Check logs for "Processing Sound library not found" warnings
+
+**"Processing Sound library not found" warning:**
+- This is normal if you haven't installed the sound library
+- The application will continue without beat detection
+- To enable beat detection, run `./scripts/setup-sound-library.sh`
+- Then add `lib/sound.jar` to your classpath
+
+**Audio input fails but library is installed:**
+- Check microphone permissions in System Preferences (macOS) or Settings (Windows/Linux)
+- Verify your microphone is working in other applications
+- Try a different audio input device
+- The system will fall back to timed image transitions
 
 If beat detection fails, the system will fall back to timed image transitions.
 

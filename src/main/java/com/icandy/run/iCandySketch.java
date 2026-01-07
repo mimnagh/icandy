@@ -38,7 +38,7 @@ public class iCandySketch extends PApplet {
     private TextDisplayManager textDisplayManager;
     private ImageDisplayManager imageDisplayManager;
     private PhraseSequencer phraseSequencer;
-    // BeatDetectorWrapper will be added in task 10
+    private BeatDetectorWrapper beatDetector;
     
     // State
     private boolean initialized = false;
@@ -94,6 +94,14 @@ public class iCandySketch extends PApplet {
     public void settings() {
         // Set window size - use fullscreen or default size
         size(1280, 720);
+        
+        // Suppress Processing icon loading errors
+        // This prevents NullPointerException when icon resource is not found
+        try {
+            // Processing will try to load icon, but we don't need it
+        } catch (Exception e) {
+            // Ignore icon loading errors
+        }
     }
     
     @Override
@@ -117,8 +125,8 @@ public class iCandySketch extends PApplet {
             // Initialize sequencer
             initializeSequencer();
             
-            // Set up audio input and beat detection (task 10)
-            // setupAudioAndBeatDetection();
+            // Set up audio input and beat detection
+            setupAudioAndBeatDetection();
             
             // Mark as initialized
             initialized = true;
@@ -139,11 +147,18 @@ public class iCandySketch extends PApplet {
     private void loadConfiguration() throws IOException {
         config = new ConfigurationManager();
         
-        if (configFilePath != null && Files.exists(Path.of(configFilePath))) {
-            config.loadFromFile(configFilePath);
-            LOGGER.info("Configuration loaded from: " + configFilePath);
+        if (configFilePath != null) {
+            // Expand ~ to user home directory
+            String expandedPath = configFilePath.replaceFirst("^~", System.getProperty("user.home"));
+            
+            if (Files.exists(Path.of(expandedPath))) {
+                config.loadFromFile(expandedPath);
+                LOGGER.info("Configuration loaded from: " + expandedPath);
+            } else {
+                LOGGER.warning("Configuration file not found, using defaults: " + expandedPath);
+            }
         } else {
-            LOGGER.warning("Configuration file not found, using defaults: " + configFilePath);
+            LOGGER.info("No configuration file specified, using defaults");
         }
     }
     
@@ -236,6 +251,36 @@ public class iCandySketch extends PApplet {
     }
     
     /**
+     * Sets up audio input and beat detection.
+     * 
+     * This method initializes the BeatDetectorWrapper and configures it
+     * with the sensitivity from the configuration.
+     * 
+     * If audio input fails or the Sound library is not available,
+     * the system will continue without beat detection.
+     * 
+     * Requirements: 5.1, 5.2, 7.2, 8.2, 8.3
+     */
+    private void setupAudioAndBeatDetection() {
+        try {
+            beatDetector = new BeatDetectorWrapper(this);
+            beatDetector.setSensitivity(config.getBeatSensitivity());
+            beatDetector.setup();
+            
+            if (beatDetector.isAudioAvailable()) {
+                LOGGER.info("Beat detection enabled with sensitivity: " + 
+                    config.getBeatSensitivity() + "ms");
+            } else {
+                LOGGER.info("Beat detection not available, continuing without audio");
+            }
+            
+        } catch (Exception e) {
+            LOGGER.warning("Failed to initialize beat detection: " + e.getMessage());
+            LOGGER.info("Continuing without beat detection");
+        }
+    }
+    
+    /**
      * Processing draw() loop - renders the visual output.
      * 
      * This method:
@@ -257,8 +302,11 @@ public class iCandySketch extends PApplet {
         // Clear background
         background(parseBackgroundColor());
         
-        // Update beat detection state (task 10)
-        // boolean beatDetected = updateBeatDetection();
+        // Check for beat detection
+        boolean beatDetected = false;
+        if (beatDetector != null && beatDetector.isAudioAvailable()) {
+            beatDetected = beatDetector.isBeat();
+        }
         
         // Check for automatic phrase advancement
         if (textDisplayManager.shouldAdvance()) {
@@ -277,10 +325,10 @@ public class iCandySketch extends PApplet {
             textY
         );
         
-        // Swap images on beat detection (task 10)
-        // if (beatDetected) {
-        //     imageDisplayManager.swapImages();
-        // }
+        // Swap images on beat detection
+        if (beatDetected) {
+            imageDisplayManager.swapImages();
+        }
     }
     
     /**
@@ -354,5 +402,17 @@ public class iCandySketch extends PApplet {
         } catch (NumberFormatException e) {
             return color(0, 0, 0); // Default to black on error
         }
+    }
+    
+    /**
+     * Called when the sketch is stopped.
+     * Cleans up resources including audio input.
+     */
+    @Override
+    public void stop() {
+        if (beatDetector != null) {
+            beatDetector.stop();
+        }
+        super.stop();
     }
 }
