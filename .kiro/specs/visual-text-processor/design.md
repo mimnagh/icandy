@@ -291,30 +291,28 @@ class BeatDetectorWrapper {
 
 #### 8. PhraseSequencer
 
-Manages the sequence of phrases and timing with keyboard navigation.
+Manages the sequence of phrases and automatic timing.
 
 ```java
 class PhraseSequencer {
   String getCurrentPhrase();
   String[] getWordsInCurrentPhrase();
   void advance();
-  void goBack();
   boolean hasNext();
-  boolean hasPrevious();
   void reset();
   int getCurrentIndex();
   void setLooping(boolean loop);
+  boolean shouldAdvancePhrase();
 }
 ```
 
 **Responsibilities**:
 - Track current position in text script
 - Provide current phrase and its words
-- Advance to next phrase (automatic or via right arrow key)
-- Go back to previous phrase (via left arrow key)
+- Advance to next phrase automatically based on timing
 - Handle end of script (loop back to beginning by default)
-- Handle beginning of script (can't go back further)
 - Support configurable looping behavior
+- Calculate when phrase should advance based on display duration
 
 #### 9. iCandySketch (Main Processing Sketch)
 
@@ -335,8 +333,9 @@ class iCandySketch extends PApplet {
 - Set up audio input and beat detection
 - Coordinate display managers and sequencer
 - Handle Processing lifecycle (setup/draw)
-- Handle keyboard input (left/right arrow keys)
+- Handle keyboard input (left/right arrow keys for image swapping)
 - Manage frame rate and rendering
+- Handle automatic phrase advancement based on timing
 
 ### Configuration Component
 
@@ -491,15 +490,15 @@ class BeatState {
 
 ### Property 9: Sequential Phrase Display
 
-*For any* sequence of phrases, they should be displayed in order from first to last, with each phrase displayed exactly once before moving to the next (when advancing automatically or via right arrow key).
+*For any* sequence of phrases, they should be displayed in order from first to last automatically based on timing, with each phrase displayed exactly once before moving to the next.
 
-**Validates: Requirements 4.1, 4.6, 4.8**
+**Validates: Requirements 4.1, 4.6**
 
-### Property 10: Backward Navigation
+### Property 10: Arrow Key Image Swapping
 
-*For any* phrase at position P > 0, pressing the left arrow key should display the phrase at position P-1.
+*For any* phrase being displayed, pressing either the left or right arrow key should swap the currently displayed images with different images from the same phrase's content words.
 
-**Validates: Requirements 4.9**
+**Validates: Requirements 4.8, 4.9**
 
 ### Property 11: Phrase Looping
 
@@ -519,11 +518,11 @@ class BeatState {
 
 **Validates: Requirements 4.6**
 
-### Property 14: Beat-Triggered Image Swap
+### Property 14: Beat and Arrow Key Image Swap
 
-*For any* beat detection event, the currently displayed images should be replaced with different images from the same words' image sets.
+*For any* beat detection event or arrow key press, the currently displayed images should be replaced with different images from the same phrase's content words.
 
-**Validates: Requirements 5.3**
+**Validates: Requirements 5.3, 4.8, 4.9**
 
 ### Property 15: Image Rotation Without Immediate Repetition
 

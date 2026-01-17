@@ -6,6 +6,13 @@ A Processing-based application that creates dynamic visual experiences by associ
 
 ```
 icandy/
+├── bin/                                # Shell scripts
+│   ├── build.sh                        # Compile project
+│   ├── run-build.sh                    # Download images
+│   ├── run-sketch.sh                   # Run visual display
+│   ├── quick-start.sh                  # All-in-one script
+│   ├── test.sh                         # Run tests
+│   └── clean-data.sh                   # Clean data
 ├── src/
 │   ├── main/
 │   │   └── java/
@@ -25,6 +32,9 @@ icandy/
 │   ├── associations.json               # Word-to-image mappings
 │   └── stopwords.txt                   # Stop words list
 ├── logs/                               # Application logs
+├── scripts/                            # Setup scripts
+│   ├── setup-config.sh                 # Configuration setup
+│   └── setup-sound-library.sh          # Sound library setup
 ├── config.json.example                 # Configuration template
 ├── unsplash.properties.example         # Unsplash credentials template
 └── pom.xml                             # Maven build configuration
@@ -101,7 +111,88 @@ mvn clean install
 
 ## Usage
 
-### Build Phase
+### Quick Start with Shell Scripts
+
+The easiest way to use iCandy is with the provided shell scripts in the `bin/` directory:
+
+```bash
+# 1. Build the project
+bin/build.sh
+
+# 2. Run build phase (download images)
+bin/run-build.sh data/Maryhadalittlelamb.txt
+
+# 3. Run visual display
+bin/run-sketch.sh data/Maryhadalittlelamb.txt
+```
+
+Or use the all-in-one quick start:
+
+```bash
+bin/quick-start.sh
+```
+
+### Shell Scripts Reference
+
+All scripts are located in the `bin/` directory.
+
+#### `bin/build.sh`
+Compiles the project and creates an executable JAR.
+
+```bash
+bin/build.sh
+```
+
+#### `bin/run-build.sh`
+Runs the build phase to download images and create associations.
+
+```bash
+bin/run-build.sh <text-file> [config-file]
+
+# Examples:
+bin/run-build.sh data/Maryhadalittlelamb.txt
+bin/run-build.sh my_script.txt custom_config.json
+```
+
+#### `bin/run-sketch.sh`
+Runs the visual display (Processing sketch).
+
+```bash
+bin/run-sketch.sh <text-file> [config-file]
+
+# Examples:
+bin/run-sketch.sh data/Maryhadalittlelamb.txt
+bin/run-sketch.sh my_script.txt custom_config.json
+```
+
+#### `bin/test.sh`
+Runs unit tests and property-based tests.
+
+```bash
+# Run all tests
+bin/test.sh
+
+# Run specific test class
+bin/test.sh ImageDisplayManagerBasicTest
+```
+
+#### `bin/quick-start.sh`
+Runs the complete workflow: build, download images, and display.
+
+```bash
+bin/quick-start.sh
+```
+
+#### `bin/clean-data.sh`
+Removes downloaded images and associations to start fresh.
+
+```bash
+bin/clean-data.sh
+```
+
+### Manual Usage (Advanced)
+
+#### Build Phase
 
 Process a text script and download images:
 
@@ -147,7 +238,17 @@ After completing the build phase, run the Processing sketch to display the visua
 - Build phase must be completed first (associations.json must exist)
 - Text file used in build phase
 
-**Option 1: Run with Maven (Recommended for Development)**
+**Option 1: Use Shell Script (Recommended)**
+
+```bash
+bin/run-sketch.sh <path-to-text-file> [path-to-config.json]
+
+# Examples:
+bin/run-sketch.sh data/Maryhadalittlelamb.txt
+bin/run-sketch.sh my_script.txt ~/.icandy/config.json
+```
+
+**Option 2: Run with Maven**
 
 ```bash
 mvn exec:java -Dexec.mainClass="com.icandy.run.iCandySketch" \
@@ -180,7 +281,7 @@ mvn exec:java -Dexec.mainClass="com.icandy.run.iCandySketch" \
   -Dexec.args="data/Maryhadalittlelamb.txt ~/.icandy/config.json"
 ```
 
-**Option 2: Run with Java directly**
+**Option 3: Run with Java directly**
 
 First, ensure all dependencies are in the classpath:
 
@@ -194,7 +295,7 @@ java -Xmx2g -cp "target/icandy-1.0.0.jar:target/lib/*" \
   <path-to-text-file> [path-to-config.json]
 ```
 
-**Option 2a: Run with Sound Library (for Beat Detection)**
+**Option 3a: Run with Sound Library (for Beat Detection)**
 
 If you've installed the Processing Sound library using `./scripts/setup-sound-library.sh`:
 
@@ -213,7 +314,7 @@ With the sound library, the application will:
 - Swap images in sync with detected beats
 - Fall back to timed transitions if audio input fails
 
-**Option 3: Quick Start (using default config)**
+**Option 4: Quick Start (using default config)**
 
 If you've set up `~/.icandy/config.json`, you can omit the config path:
 
@@ -229,18 +330,52 @@ The sketch will:
 4. Open a 1280x720 window
 5. Display phrases with associated images
 6. Automatically advance through phrases
-7. Respond to keyboard navigation (arrow keys)
+7. Respond to keyboard input (arrow keys swap images)
 
 **Note:** Beat detection (audio-synchronized image swapping) will be available after Task 10 is completed.
 
 ### Keyboard Controls
 
-- **Right Arrow**: Advance to next phrase
-- **Left Arrow**: Go back to previous phrase
+- **Right Arrow**: Swap images within current phrase (text stays the same)
+- **Left Arrow**: Swap images within current phrase (text stays the same)
+
+**Note**: Text phrases advance automatically based on timing. Arrow keys only change images, not text.
 
 ## Complete Example Workflow
 
-Here's a complete example from start to finish:
+Here's a complete example from start to finish using the shell scripts:
+
+### Quick Method (Recommended)
+
+```bash
+# 1. Setup (one-time)
+./scripts/setup-config.sh
+nano ~/.icandy/unsplash.properties  # Add your API credentials
+
+# 2. Run everything
+bin/quick-start.sh
+```
+
+### Step-by-Step Method
+
+```bash
+# 1. Setup (one-time)
+./scripts/setup-config.sh
+nano ~/.icandy/unsplash.properties  # Add your API credentials
+
+# 2. Build the project
+bin/build.sh
+
+# 3. Run build phase (download images)
+bin/run-build.sh data/Maryhadalittlelamb.txt
+
+# 4. Run visual display
+bin/run-sketch.sh data/Maryhadalittlelamb.txt
+```
+
+### Manual Method (Advanced)
+
+Here's a complete example from start to finish using Maven directly:
 
 ### 1. Setup (One-time)
 
@@ -284,16 +419,35 @@ This will:
 - Display phrases like movie subtitles
 - Show associated images for each phrase
 - Automatically advance through phrases
-- Allow navigation with arrow keys
+- Allow image swapping with arrow keys
 
 ### 4. Interact
 
 - Watch phrases advance automatically (timing based on word count)
-- Press **Right Arrow** to skip ahead
-- Press **Left Arrow** to go back
+- Press **Right Arrow** to swap images within current phrase
+- Press **Left Arrow** to swap images within current phrase
 - Close the window to exit
 
 ## Using Your Own Text
+
+### With Shell Scripts (Recommended)
+
+Create a text file with your content:
+
+```bash
+echo "The quick brown fox jumps over the lazy dog." > mytext.txt
+echo "This is a test of the visual text processor." >> mytext.txt
+```
+
+Run the build and display:
+
+```bash
+bin/build.sh                    # Compile (if not already done)
+bin/run-build.sh mytext.txt     # Download images
+bin/run-sketch.sh mytext.txt    # Display visual experience
+```
+
+### With Maven (Advanced)
 
 Create a text file with your content:
 
@@ -337,12 +491,28 @@ mvn exec:java -Dexec.mainClass="com.icandy.run.iCandySketch" \
 - `textSize`: Font size for phrases (default: 48)
 - `textColor`: Text color in hex (default: #FFFFFF)
 - `backgroundColor`: Background color in hex (default: #000000)
-- `enableKeyboardNavigation`: Enable arrow key navigation (default: true)
+- `enableKeyboardNavigation`: Enable arrow key image swapping (default: true)
 - `simultaneousImageCount`: Number of images to display at once (default: 3)
 - `loopPhrases`: Loop back to first phrase after last (default: true)
 - `audioSource`: Audio input source (default: microphone)
 
 ## Testing
+
+### Using Shell Script (Recommended)
+
+Run all tests:
+
+```bash
+bin/test.sh
+```
+
+Run specific test class:
+
+```bash
+bin/test.sh ImageDisplayManagerBasicTest
+```
+
+### Using Maven (Advanced)
 
 ### Automated Tests
 
@@ -415,8 +585,9 @@ open data/images/test_sunset.jpg
 
 **NullPointerException about "url" during startup:**
 - This is a harmless warning from Processing's icon loading
-- The application will continue to run normally
-- You can safely ignore this message
+- The message "Cannot invoke java.net.URL.toString() because url is null" can be safely ignored
+- The application will continue to run normally and display the visual experience
+- This is a known Processing framework issue when running without a custom icon
 
 **"No phrases found" error:**
 - Verify your text file contains actual text
@@ -438,6 +609,7 @@ open data/images/test_sunset.jpg
 - Check that `enableKeyboardNavigation` is true in config.json
 - Ensure the Processing window has focus (click on it)
 - Try clicking in the window before pressing arrow keys
+- Remember: arrow keys only swap images, they don't change text phrases
 
 ### Audio Input Issues
 

@@ -220,9 +220,9 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - Handle audio input failures gracefully with fallback
     - _Requirements: 5.1, 5.2, 7.2, 8.2, 8.3_
 
-  - [ ]* 10.2 Write property test for beat-triggered image swap
-    - **Property 14: Beat-Triggered Image Swap**
-    - **Validates: Requirements 5.3**
+  - [ ]* 10.2 Write property test for beat and arrow key image swap
+    - **Property 14: Beat and Arrow Key Image Swap**
+    - **Validates: Requirements 5.3, 4.8, 4.9**
 
   - [ ]* 10.3 Write property test for image stability without beats
     - **Property 16: Image Stability Without Beats**
@@ -234,35 +234,34 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - Test fallback behavior when audio unavailable
     - _Requirements: 5.1, 5.2, 8.2, 8.3_
 
-- [x] 11. Implement phrase sequencing with keyboard navigation
+- [x] 11. Implement phrase sequencing with automatic timing
   - [x] 11.1 Create PhraseSequencer class
     - Implement getCurrentPhrase() and getWordsInCurrentPhrase()
-    - Implement advance() to move to next phrase
-    - Implement goBack() to move to previous phrase
-    - Implement hasNext() and hasPrevious() boundary checks
+    - Implement advance() to move to next phrase automatically
+    - Implement hasNext() boundary checks
     - Implement setLooping() to configure looping behavior
     - Track current position in phrase sequence
     - Handle looping back to first phrase when reaching end
-    - _Requirements: 4.1, 4.5, 4.7, 4.8, 4.9_
+    - Note: Automatic timing is handled by TextDisplayManager.shouldAdvance()
+    - _Requirements: 4.1, 4.5, 4.6, 4.7_
 
   - [ ]* 11.2 Write property test for sequential phrase display
     - **Property 9: Sequential Phrase Display**
-    - **Validates: Requirements 4.1, 4.6, 4.8**
+    - **Validates: Requirements 4.1, 4.6**
 
-  - [ ]* 11.3 Write property test for backward navigation
-    - **Property 10: Backward Navigation**
-    - **Validates: Requirements 4.9**
+  - [ ]* 11.3 Write property test for arrow key image swapping
+    - **Property 10: Arrow Key Image Swapping**
+    - **Validates: Requirements 4.8, 4.9**
 
   - [ ]* 11.4 Write property test for phrase looping
     - **Property 11: Phrase Looping**
     - **Validates: Requirements 4.7**
 
   - [ ]* 11.5 Write unit tests for PhraseSequencer
-    - Test forward navigation
-    - Test backward navigation
+    - Test automatic phrase advancement based on timing
     - Test boundary conditions (first/last phrase)
     - Test looping behavior
-    - _Requirements: 4.1, 4.5, 4.7, 4.8, 4.9_
+    - _Requirements: 4.1, 4.5, 4.6, 4.7_
 
 - [x] 12. Checkpoint - Ensure run phase component tests pass
   - Ensure all tests pass, ask the user if questions arise.
@@ -284,16 +283,16 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - Maintain target frame rate
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.5, 7.3_
 
-  - [x] 13.3 Implement keyPressed() for keyboard navigation
-    - Handle right arrow key to advance phrase
-    - Handle left arrow key to go back to previous phrase
-    - Reset phrase timer on manual navigation
+  - [x] 13.3 Implement keyPressed() for image swapping
+    - Handle right arrow key to swap images within current phrase
+    - Handle left arrow key to swap images within current phrase
+    - Use same image swapping logic as beat detection
     - _Requirements: 4.8, 4.9_
 
   - [ ]* 13.4 Write integration tests for iCandySketch
     - Test complete setup and initialization
     - Test draw loop execution
-    - Test keyboard input handling
+    - Test keyboard input handling for image swapping
     - Test beat detection integration
     - Test phrase looping behavior
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.7, 4.8, 4.9, 5.1, 5.2, 5.5_
@@ -344,7 +343,7 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - Include comments explaining each setting
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-  - [ ] 15.3 Create README with usage instructions
+  - [x] 15.3 Create README with usage instructions
     - Explain build phase usage (command-line: java BuildMain <textfile>)
     - Explain run phase usage (run Processing sketch)
     - Document keyboard controls (left/right arrows)
@@ -360,9 +359,8 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
 
   - [ ] 16.2 Run complete run phase with built associations
-    - Verify phrases display correctly
-    - Verify images display and swap
-    - Verify keyboard navigation works
+    - Verify phrases display correctly and advance automatically
+    - Verify images display and swap on beats and arrow keys
     - Verify phrase looping works
     - Verify beat detection works (if audio available)
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.7, 4.8, 4.9, 5.1, 5.2, 5.3, 5.4, 5.5_

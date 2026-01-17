@@ -70,10 +70,10 @@ iCandy is a Processing.org-based application that creates dynamic visual experie
 3. WHEN a phrase is displayed, THE Processing_Application SHALL show images associated with the content words in that phrase (excluding stop words)
 4. WHERE the number of simultaneous images is configured, THE Processing_Application SHALL display that many images from the phrase's content words
 5. WHEN calculating display duration, THE Processing_Application SHALL keep each phrase on screen long enough to be read comfortably
-6. WHEN a phrase has finished displaying, THE Processing_Application SHALL transition to the next phrase in the sequence
+6. WHEN a phrase has finished displaying, THE Processing_Application SHALL transition to the next phrase in the sequence automatically
 7. WHEN the last phrase is reached and finishes displaying, THE Processing_Application SHALL loop back to the first phrase
-8. WHEN the user presses the right arrow key, THE Processing_Application SHALL advance to the next phrase immediately
-9. WHEN the user presses the left arrow key, THE Processing_Application SHALL go back to the previous phrase
+8. WHEN the user presses the right arrow key, THE Processing_Application SHALL swap the currently displayed images with different images from the same phrase's content words
+9. WHEN the user presses the left arrow key, THE Processing_Application SHALL swap the currently displayed images with different images from the same phrase's content words
 
 ### Requirement 5: Beat Detection and Image Swapping
 

@@ -351,10 +351,10 @@ public class iCandySketch extends PApplet {
     }
     
     /**
-     * Handles keyboard input for navigation.
+     * Handles keyboard input for image swapping.
      * 
-     * - Right arrow key: advance to next phrase
-     * - Left arrow key: go back to previous phrase
+     * - Right arrow key: swap images within current phrase
+     * - Left arrow key: swap images within current phrase
      * 
      * Requirements: 4.8, 4.9
      */
@@ -365,20 +365,18 @@ public class iCandySketch extends PApplet {
         }
         
         if (keyCode == RIGHT) {
-            // Advance to next phrase
-            phraseSequencer.advance();
-            updateCurrentPhrase();
+            // Swap images within current phrase
+            imageDisplayManager.swapImages();
             
-            LOGGER.info("Advanced to phrase " + (phraseSequencer.getCurrentIndex() + 1) + 
-                " of " + phraseSequencer.getPhraseCount());
+            LOGGER.info("Right arrow pressed - swapped images for phrase " + 
+                (phraseSequencer.getCurrentIndex() + 1));
             
         } else if (keyCode == LEFT) {
-            // Go back to previous phrase
-            phraseSequencer.goBack();
-            updateCurrentPhrase();
+            // Swap images within current phrase
+            imageDisplayManager.swapImages();
             
-            LOGGER.info("Went back to phrase " + (phraseSequencer.getCurrentIndex() + 1) + 
-                " of " + phraseSequencer.getPhraseCount());
+            LOGGER.info("Left arrow pressed - swapped images for phrase " + 
+                (phraseSequencer.getCurrentIndex() + 1));
         }
     }
     
