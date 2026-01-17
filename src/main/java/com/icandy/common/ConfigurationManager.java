@@ -2,6 +2,7 @@ package com.icandy.common;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.icandy.run.LayoutConfig;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,6 +39,23 @@ public class ConfigurationManager {
     private int simultaneousImageCount = 3;
     private boolean loopPhrases = true;
     private String audioSource = "microphone";
+    
+    // Layout configuration
+    private LayoutConfig layoutConfig = new LayoutConfig();
+    private String currentLayoutAlgorithm = "grid";
+    private float layoutTransitionDuration = 1000.0f;
+    
+    // Transition configuration
+    private String currentTransitionEffect = "fade";
+    private float transitionDuration = 500.0f;
+    private String transitionEasing = "ease_in_out";
+    private boolean enableStagger = false;
+    private float staggerDelay = 50.0f;
+    private String slideDirection = "left";
+    private String zoomMode = "zoom_in";
+    private float rotationAngle = 1.5708f; // PI/2 radians (90 degrees)
+    private String blendMode = "normal";
+    private float morphIntensity = 1.0f;
     
     /**
      * Creates a ConfigurationManager with default values.
@@ -79,6 +97,16 @@ public class ConfigurationManager {
         // Load run configuration
         if (config.has("run")) {
             loadRunConfiguration(config.getAsJsonObject("run"));
+        }
+        
+        // Load layout configuration
+        if (config.has("layout")) {
+            loadLayoutConfiguration(config.getAsJsonObject("layout"));
+        }
+        
+        // Load transition configuration
+        if (config.has("transitions")) {
+            loadTransitionConfiguration(config.getAsJsonObject("transitions"));
         }
     }
     
@@ -310,6 +338,476 @@ public class ConfigurationManager {
     }
     
     /**
+     * Loads transition configuration from JSON object.
+     */
+    private void loadTransitionConfiguration(JsonObject transitionConfig) {
+        // Current transition effect
+        if (transitionConfig.has("effect")) {
+            try {
+                String effect = transitionConfig.get("effect").getAsString().toLowerCase();
+                if (isValidTransitionEffect(effect)) {
+                    this.currentTransitionEffect = effect;
+                } else {
+                    logWarning("Invalid transition effect '" + effect + "', using default: " + this.currentTransitionEffect);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid transition effect value, using default: " + this.currentTransitionEffect);
+            }
+        }
+        
+        // Transition duration
+        if (transitionConfig.has("duration")) {
+            try {
+                float value = transitionConfig.get("duration").getAsFloat();
+                if (value > 0) {
+                    this.transitionDuration = value;
+                } else {
+                    logWarning("Transition duration must be positive, using default: " + this.transitionDuration);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid transition duration, using default: " + this.transitionDuration);
+            }
+        }
+        
+        // Transition easing
+        if (transitionConfig.has("easing")) {
+            try {
+                String easing = transitionConfig.get("easing").getAsString().toLowerCase();
+                if (isValidEasingFunction(easing)) {
+                    this.transitionEasing = easing;
+                } else {
+                    logWarning("Invalid easing function '" + easing + "', using default: " + this.transitionEasing);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid easing function value, using default: " + this.transitionEasing);
+            }
+        }
+        
+        // Enable stagger
+        if (transitionConfig.has("enableStagger")) {
+            try {
+                this.enableStagger = transitionConfig.get("enableStagger").getAsBoolean();
+            } catch (Exception e) {
+                logWarning("Invalid enableStagger value, using default: " + this.enableStagger);
+            }
+        }
+        
+        // Stagger delay
+        if (transitionConfig.has("staggerDelay")) {
+            try {
+                float value = transitionConfig.get("staggerDelay").getAsFloat();
+                if (value >= 0) {
+                    this.staggerDelay = value;
+                } else {
+                    logWarning("Stagger delay cannot be negative, using default: " + this.staggerDelay);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid stagger delay value, using default: " + this.staggerDelay);
+            }
+        }
+        
+        // Slide direction
+        if (transitionConfig.has("slideDirection")) {
+            try {
+                String direction = transitionConfig.get("slideDirection").getAsString().toLowerCase();
+                if (isValidSlideDirection(direction)) {
+                    this.slideDirection = direction;
+                } else {
+                    logWarning("Invalid slide direction '" + direction + "', using default: " + this.slideDirection);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid slide direction value, using default: " + this.slideDirection);
+            }
+        }
+        
+        // Zoom mode
+        if (transitionConfig.has("zoomMode")) {
+            try {
+                String mode = transitionConfig.get("zoomMode").getAsString().toLowerCase();
+                if (isValidZoomMode(mode)) {
+                    this.zoomMode = mode;
+                } else {
+                    logWarning("Invalid zoom mode '" + mode + "', using default: " + this.zoomMode);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid zoom mode value, using default: " + this.zoomMode);
+            }
+        }
+        
+        // Rotation angle
+        if (transitionConfig.has("rotationAngle")) {
+            try {
+                this.rotationAngle = transitionConfig.get("rotationAngle").getAsFloat();
+            } catch (Exception e) {
+                logWarning("Invalid rotation angle value, using default: " + this.rotationAngle);
+            }
+        }
+        
+        // Blend mode
+        if (transitionConfig.has("blendMode")) {
+            try {
+                String mode = transitionConfig.get("blendMode").getAsString().toLowerCase();
+                if (isValidBlendMode(mode)) {
+                    this.blendMode = mode;
+                } else {
+                    logWarning("Invalid blend mode '" + mode + "', using default: " + this.blendMode);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid blend mode value, using default: " + this.blendMode);
+            }
+        }
+        
+        // Morph intensity
+        if (transitionConfig.has("morphIntensity")) {
+            try {
+                float value = transitionConfig.get("morphIntensity").getAsFloat();
+                if (value >= 0.0f && value <= 1.0f) {
+                    this.morphIntensity = value;
+                } else {
+                    logWarning("Morph intensity must be between 0.0 and 1.0, using default: " + this.morphIntensity);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid morph intensity value, using default: " + this.morphIntensity);
+            }
+        }
+    }
+    
+    /**
+     * Loads layout configuration from JSON object.
+     */
+    private void loadLayoutConfiguration(JsonObject layoutConfigJson) {
+        // Current layout algorithm
+        if (layoutConfigJson.has("algorithm")) {
+            try {
+                String algorithm = layoutConfigJson.get("algorithm").getAsString().toLowerCase();
+                if (isValidLayoutAlgorithm(algorithm)) {
+                    this.currentLayoutAlgorithm = algorithm;
+                } else {
+                    logWarning("Invalid layout algorithm '" + algorithm + "', using default: " + this.currentLayoutAlgorithm);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid layout algorithm value, using default: " + this.currentLayoutAlgorithm);
+            }
+        }
+        
+        // Layout transition duration
+        if (layoutConfigJson.has("transitionDuration")) {
+            try {
+                float value = layoutConfigJson.get("transitionDuration").getAsFloat();
+                if (value > 0) {
+                    this.layoutTransitionDuration = value;
+                } else {
+                    logWarning("Layout transition duration must be positive, using default: " + this.layoutTransitionDuration);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid layout transition duration, using default: " + this.layoutTransitionDuration);
+            }
+        }
+        
+        // Display region
+        if (layoutConfigJson.has("displayRegion")) {
+            try {
+                JsonObject region = layoutConfigJson.getAsJsonObject("displayRegion");
+                float x = region.has("x") ? region.get("x").getAsFloat() : layoutConfig.displayRegion.x;
+                float y = region.has("y") ? region.get("y").getAsFloat() : layoutConfig.displayRegion.y;
+                float width = region.has("width") ? region.get("width").getAsFloat() : layoutConfig.displayRegion.width;
+                float height = region.has("height") ? region.get("height").getAsFloat() : layoutConfig.displayRegion.height;
+                
+                if (width > 0 && height > 0) {
+                    layoutConfig.displayRegion = new LayoutConfig.Rectangle(x, y, width, height);
+                } else {
+                    logWarning("Display region width and height must be positive, using defaults");
+                }
+            } catch (Exception e) {
+                logWarning("Invalid display region configuration, using defaults");
+            }
+        }
+        
+        // Global scale
+        if (layoutConfigJson.has("globalScale")) {
+            try {
+                float value = layoutConfigJson.get("globalScale").getAsFloat();
+                if (value > 0) {
+                    layoutConfig.globalScale = value;
+                } else {
+                    logWarning("Global scale must be positive, using default: " + layoutConfig.globalScale);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid global scale value, using default: " + layoutConfig.globalScale);
+            }
+        }
+        
+        // Aspect ratio mode
+        if (layoutConfigJson.has("aspectRatioMode")) {
+            try {
+                String mode = layoutConfigJson.get("aspectRatioMode").getAsString().toUpperCase();
+                layoutConfig.aspectRatioMode = LayoutConfig.AspectRatioMode.valueOf(mode);
+            } catch (Exception e) {
+                logWarning("Invalid aspect ratio mode, using default: " + layoutConfig.aspectRatioMode);
+            }
+        }
+        
+        // Grid configuration
+        if (layoutConfigJson.has("grid")) {
+            loadGridConfiguration(layoutConfigJson.getAsJsonObject("grid"));
+        }
+        
+        // Collage configuration
+        if (layoutConfigJson.has("collage")) {
+            loadCollageConfiguration(layoutConfigJson.getAsJsonObject("collage"));
+        }
+        
+        // Circular configuration
+        if (layoutConfigJson.has("circular")) {
+            loadCircularConfiguration(layoutConfigJson.getAsJsonObject("circular"));
+        }
+        
+        // Flowing configuration
+        if (layoutConfigJson.has("flowing")) {
+            loadFlowingConfiguration(layoutConfigJson.getAsJsonObject("flowing"));
+        }
+        
+        // Validate the final configuration
+        layoutConfig.validate();
+    }
+    
+    /**
+     * Load grid-specific configuration.
+     */
+    private void loadGridConfiguration(JsonObject gridConfig) {
+        if (gridConfig.has("spacing")) {
+            try {
+                float value = gridConfig.get("spacing").getAsFloat();
+                if (value >= 0) {
+                    layoutConfig.gridSpacing = value;
+                }
+            } catch (Exception e) {
+                logWarning("Invalid grid spacing value, using default");
+            }
+        }
+        
+        if (gridConfig.has("padding")) {
+            try {
+                float value = gridConfig.get("padding").getAsFloat();
+                if (value >= 0) {
+                    layoutConfig.gridPadding = value;
+                }
+            } catch (Exception e) {
+                logWarning("Invalid grid padding value, using default");
+            }
+        }
+        
+        if (gridConfig.has("alignment")) {
+            try {
+                String alignment = gridConfig.get("alignment").getAsString().toUpperCase();
+                layoutConfig.gridAlignment = LayoutConfig.Alignment.valueOf(alignment);
+            } catch (Exception e) {
+                logWarning("Invalid grid alignment value, using default");
+            }
+        }
+        
+        if (gridConfig.has("rows")) {
+            try {
+                int value = gridConfig.get("rows").getAsInt();
+                if (value >= 0) {
+                    layoutConfig.gridRows = value;
+                }
+            } catch (Exception e) {
+                logWarning("Invalid grid rows value, using default");
+            }
+        }
+        
+        if (gridConfig.has("cols")) {
+            try {
+                int value = gridConfig.get("cols").getAsInt();
+                if (value >= 0) {
+                    layoutConfig.gridCols = value;
+                }
+            } catch (Exception e) {
+                logWarning("Invalid grid cols value, using default");
+            }
+        }
+    }
+    
+    /**
+     * Load collage-specific configuration.
+     */
+    private void loadCollageConfiguration(JsonObject collageConfig) {
+        if (collageConfig.has("minSize")) {
+            try {
+                float value = collageConfig.get("minSize").getAsFloat();
+                if (value > 0) {
+                    layoutConfig.minSize = value;
+                }
+            } catch (Exception e) {
+                logWarning("Invalid collage minSize value, using default");
+            }
+        }
+        
+        if (collageConfig.has("maxSize")) {
+            try {
+                float value = collageConfig.get("maxSize").getAsFloat();
+                if (value > 0) {
+                    layoutConfig.maxSize = value;
+                }
+            } catch (Exception e) {
+                logWarning("Invalid collage maxSize value, using default");
+            }
+        }
+        
+        if (collageConfig.has("minRotation")) {
+            try {
+                layoutConfig.minRotation = collageConfig.get("minRotation").getAsFloat();
+            } catch (Exception e) {
+                logWarning("Invalid collage minRotation value, using default");
+            }
+        }
+        
+        if (collageConfig.has("maxRotation")) {
+            try {
+                layoutConfig.maxRotation = collageConfig.get("maxRotation").getAsFloat();
+            } catch (Exception e) {
+                logWarning("Invalid collage maxRotation value, using default");
+            }
+        }
+        
+        if (collageConfig.has("overlapAmount")) {
+            try {
+                float value = collageConfig.get("overlapAmount").getAsFloat();
+                if (value >= 0 && value <= 1) {
+                    layoutConfig.overlapAmount = value;
+                }
+            } catch (Exception e) {
+                logWarning("Invalid collage overlapAmount value, using default");
+            }
+        }
+    }
+    
+    /**
+     * Load circular-specific configuration.
+     */
+    private void loadCircularConfiguration(JsonObject circularConfig) {
+        if (circularConfig.has("radius")) {
+            try {
+                float value = circularConfig.get("radius").getAsFloat();
+                if (value > 0) {
+                    layoutConfig.circleRadius = value;
+                }
+            } catch (Exception e) {
+                logWarning("Invalid circular radius value, using default");
+            }
+        }
+        
+        if (circularConfig.has("arcSpan")) {
+            try {
+                float value = circularConfig.get("arcSpan").getAsFloat();
+                if (value > 0 && value <= 360) {
+                    layoutConfig.arcSpan = value;
+                }
+            } catch (Exception e) {
+                logWarning("Invalid circular arcSpan value, using default");
+            }
+        }
+        
+        if (circularConfig.has("rotationDirection")) {
+            try {
+                String direction = circularConfig.get("rotationDirection").getAsString().toUpperCase();
+                layoutConfig.rotationDirection = LayoutConfig.RotationDirection.valueOf(direction);
+            } catch (Exception e) {
+                logWarning("Invalid circular rotationDirection value, using default");
+            }
+        }
+    }
+    
+    /**
+     * Load flowing-specific configuration.
+     */
+    private void loadFlowingConfiguration(JsonObject flowingConfig) {
+        if (flowingConfig.has("pathCurvature")) {
+            try {
+                float value = flowingConfig.get("pathCurvature").getAsFloat();
+                if (value >= 0) {
+                    layoutConfig.pathCurvature = value;
+                }
+            } catch (Exception e) {
+                logWarning("Invalid flowing pathCurvature value, using default");
+            }
+        }
+        
+        if (flowingConfig.has("flowDirection")) {
+            try {
+                String direction = flowingConfig.get("flowDirection").getAsString().toUpperCase();
+                layoutConfig.flowDirection = LayoutConfig.FlowDirection.valueOf(direction);
+            } catch (Exception e) {
+                logWarning("Invalid flowing flowDirection value, using default");
+            }
+        }
+        
+        if (flowingConfig.has("pathSpacing")) {
+            try {
+                float value = flowingConfig.get("pathSpacing").getAsFloat();
+                if (value > 0) {
+                    layoutConfig.pathSpacing = value;
+                }
+            } catch (Exception e) {
+                logWarning("Invalid flowing pathSpacing value, using default");
+            }
+        }
+    }
+    
+    /**
+     * Check if a layout algorithm name is valid.
+     */
+    private boolean isValidLayoutAlgorithm(String algorithm) {
+        return algorithm.equals("grid") || algorithm.equals("collage") || 
+               algorithm.equals("circular") || algorithm.equals("flowing");
+    }
+    
+    /**
+     * Check if a transition effect name is valid.
+     */
+    private boolean isValidTransitionEffect(String effect) {
+        return effect.equals("fade") || effect.equals("slide") || 
+               effect.equals("zoom") || effect.equals("rotate") || effect.equals("morph");
+    }
+    
+    /**
+     * Check if an easing function name is valid.
+     */
+    private boolean isValidEasingFunction(String easing) {
+        return easing.equals("linear") || easing.equals("ease_in") || 
+               easing.equals("ease_out") || easing.equals("ease_in_out") ||
+               easing.equals("bounce") || easing.equals("elastic");
+    }
+    
+    /**
+     * Check if a slide direction is valid.
+     */
+    private boolean isValidSlideDirection(String direction) {
+        return direction.equals("up") || direction.equals("down") || 
+               direction.equals("left") || direction.equals("right") ||
+               direction.equals("up_left") || direction.equals("up_right") ||
+               direction.equals("down_left") || direction.equals("down_right");
+    }
+    
+    /**
+     * Check if a zoom mode is valid.
+     */
+    private boolean isValidZoomMode(String mode) {
+        return mode.equals("zoom_in") || mode.equals("zoom_out") || mode.equals("zoom_both");
+    }
+    
+    /**
+     * Check if a blend mode is valid.
+     */
+    private boolean isValidBlendMode(String mode) {
+        return mode.equals("normal") || mode.equals("multiply") || 
+               mode.equals("screen") || mode.equals("overlay") ||
+               mode.equals("soft_light") || mode.equals("hard_light") ||
+               mode.equals("color_dodge") || mode.equals("color_burn");
+    }
+    
+    /**
      * Validates if a string is a valid hex color code.
      */
     private boolean isValidHexColor(String color) {
@@ -400,5 +898,125 @@ public class ConfigurationManager {
     
     public String getAudioSource() {
         return audioSource;
+    }
+    
+    // Layout configuration getters
+    
+    public LayoutConfig getLayoutConfig() {
+        return layoutConfig.copy();
+    }
+    
+    public String getCurrentLayoutAlgorithm() {
+        return currentLayoutAlgorithm;
+    }
+    
+    public float getLayoutTransitionDuration() {
+        return layoutTransitionDuration;
+    }
+    
+    /**
+     * Update the current layout algorithm.
+     * 
+     * @param algorithm The new layout algorithm ("grid", "collage", "circular", "flowing")
+     */
+    public void setCurrentLayoutAlgorithm(String algorithm) {
+        if (isValidLayoutAlgorithm(algorithm.toLowerCase())) {
+            this.currentLayoutAlgorithm = algorithm.toLowerCase();
+        } else {
+            logWarning("Invalid layout algorithm: " + algorithm);
+        }
+    }
+    
+    /**
+     * Update layout configuration parameters dynamically.
+     * 
+     * @param newConfig The new layout configuration
+     */
+    public void updateLayoutConfig(LayoutConfig newConfig) {
+        if (newConfig != null) {
+            this.layoutConfig = newConfig.copy();
+            this.layoutConfig.validate();
+        }
+    }
+    
+    // Transition configuration getters
+    
+    public String getCurrentTransitionEffect() {
+        return currentTransitionEffect;
+    }
+    
+    public float getTransitionDuration() {
+        return transitionDuration;
+    }
+    
+    public String getTransitionEasing() {
+        return transitionEasing;
+    }
+    
+    public boolean isStaggerEnabled() {
+        return enableStagger;
+    }
+    
+    public float getStaggerDelay() {
+        return staggerDelay;
+    }
+    
+    public String getSlideDirection() {
+        return slideDirection;
+    }
+    
+    public String getZoomMode() {
+        return zoomMode;
+    }
+    
+    public float getRotationAngle() {
+        return rotationAngle;
+    }
+    
+    public String getBlendMode() {
+        return blendMode;
+    }
+    
+    public float getMorphIntensity() {
+        return morphIntensity;
+    }
+    
+    /**
+     * Update the current transition effect.
+     * 
+     * @param effect The new transition effect ("fade", "slide", "zoom", "rotate", "morph")
+     */
+    public void setCurrentTransitionEffect(String effect) {
+        if (isValidTransitionEffect(effect.toLowerCase())) {
+            this.currentTransitionEffect = effect.toLowerCase();
+        } else {
+            logWarning("Invalid transition effect: " + effect);
+        }
+    }
+    
+    /**
+     * Update transition duration.
+     * 
+     * @param duration The new duration in milliseconds
+     */
+    public void setTransitionDuration(float duration) {
+        if (duration > 0) {
+            this.transitionDuration = duration;
+        } else {
+            logWarning("Transition duration must be positive: " + duration);
+        }
+    }
+    
+    /**
+     * Update transition easing function.
+     * 
+     * @param easing The new easing function
+     */
+    public void setTransitionEasing(String easing) {
+        if (isValidEasingFunction(easing.toLowerCase())) {
+            this.transitionEasing = easing.toLowerCase();
+        } else {
+            logWarning("Invalid easing function: " + easing);
+        }
     }
 }

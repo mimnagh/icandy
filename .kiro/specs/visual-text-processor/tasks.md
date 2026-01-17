@@ -297,81 +297,461 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - Test phrase looping behavior
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.7, 4.8, 4.9, 5.1, 5.2, 5.5_
 
-- [ ] 14. Implement error handling and logging
-  - [ ] 14.1 Add error handling throughout build phase
+- [x] 14. Implement configurable layout engine
+  - [x] 14.1 Create LayoutEngine and layout algorithm interfaces
+    - Create LayoutAlgorithm interface with calculatePositions() and updatePositions()
+    - Create LayoutEngine class to manage algorithm selection and configuration
+    - Create LayoutConfig class for algorithm-specific parameters
+    - Create ImageInfo and ImagePosition data models
+    - _Requirements: 9.1, 9.6_
+
+  - [x] 14.2 Implement GridLayoutAlgorithm
+    - Calculate positions in regular rectangular grid
+    - Support configurable rows, columns, spacing, padding
+    - Implement alignment options (center, left, right, top, bottom)
+    - Handle automatic grid sizing based on image count
+    - _Requirements: 9.2_
+
+  - [ ]* 14.3 Write property test for grid layout positioning
+    - **Property 19: Layout Algorithm Positioning (Grid)**
+    - **Validates: Requirements 9.1, 9.2**
+
+  - [x] 14.4 Implement CollageLayoutAlgorithm
+    - Generate random sizes within configured range
+    - Generate random rotations within configured range
+    - Implement controlled overlap with collision detection
+    - Create organic, non-uniform positioning
+    - _Requirements: 9.3_
+
+  - [ ]* 14.5 Write property test for collage layout positioning
+    - **Property 19: Layout Algorithm Positioning (Collage)**
+    - **Validates: Requirements 9.1, 9.3**
+
+  - [x] 14.6 Implement CircularLayoutAlgorithm
+    - Arrange images in circular or spiral patterns
+    - Support configurable radius and arc span
+    - Implement rotation direction (clockwise/counterclockwise)
+    - Support spiral mode with configurable pitch
+    - _Requirements: 9.4_
+
+  - [ ]* 14.7 Write property test for circular layout positioning
+    - **Property 19: Layout Algorithm Positioning (Circular)**
+    - **Validates: Requirements 9.1, 9.4**
+
+  - [x] 14.8 Implement FlowingLayoutAlgorithm
+    - Generate Bezier curve paths for image positioning
+    - Support configurable flow direction and curvature
+    - Implement organic spacing along paths
+    - Support multiple flow paths for complex layouts
+    - _Requirements: 9.5_
+
+  - [ ]* 14.9 Write property test for flowing layout positioning
+    - **Property 19: Layout Algorithm Positioning (Flowing)**
+    - **Validates: Requirements 9.1, 9.5**
+
+  - [x] 14.10 Implement layout algorithm configuration and switching
+    - Add layout configuration loading to ConfigurationManager
+    - Implement smooth transitions between layout algorithms
+    - Add layout parameter validation and clamping
+    - Support dynamic layout parameter updates
+    - _Requirements: 9.6, 9.7, 9.8_
+
+  - [ ]* 14.11 Write property test for layout algorithm configuration effect
+    - **Property 20: Layout Algorithm Configuration Effect**
+    - **Validates: Requirements 9.6, 9.8**
+
+  - [ ]* 14.12 Write property test for layout algorithm transitions
+    - **Property 21: Layout Algorithm Transitions**
+    - **Validates: Requirements 9.7**
+
+  - [ ]* 14.13 Write property test for layout parameter effects
+    - **Property 25: Layout Parameter Effect**
+    - **Validates: Requirements 13.1, 13.2, 13.3, 13.4, 13.5, 13.6**
+
+  - [ ]* 14.14 Write unit tests for LayoutEngine and algorithms
+    - Test each layout algorithm with various configurations
+    - Test layout switching and transitions
+    - Test parameter validation and error handling
+    - Test edge cases (zero images, single image, many images)
+    - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8_
+
+- [x] 15. Implement configurable transition engine
+  - [x] 15.1 Create TransitionEngine and transition effect interfaces
+    - Create TransitionEffect interface with startTransition() and updateTransition()
+    - Create TransitionEngine class to manage effect selection and timing
+    - Create TransitionConfig class for effect-specific parameters
+    - Create TransitionState and ImageState data models
+    - Implement EasingFunction enum with linear, ease-in, ease-out, ease-in-out
+    - _Requirements: 10.1, 10.7, 11.1, 11.2_
+
+  - [x] 15.2 Implement FadeTransition effect
+    - Gradually change image opacity during transitions
+    - Support configurable fade duration and easing
+    - Implement cross-fade between old and new images
+    - Use alpha blending with Processing's tint() function
+    - _Requirements: 10.2_
+
+  - [ ]* 15.3 Write property test for fade transition behavior
+    - **Property 22: Transition Effect Behavior (Fade)**
+    - **Validates: Requirements 10.1, 10.2**
+
+  - [x] 15.4 Implement SlideTransition effect
+    - Move images in from specified directions during swaps
+    - Support configurable slide direction (up, down, left, right, diagonal)
+    - Implement bounce and overshoot effects
+    - Support staggered timing for multiple images
+    - _Requirements: 10.3_
+
+  - [ ]* 15.5 Write property test for slide transition behavior
+    - **Property 22: Transition Effect Behavior (Slide)**
+    - **Validates: Requirements 10.1, 10.3**
+
+  - [x] 15.6 Implement ZoomTransition effect
+    - Scale images in or out during swaps
+    - Support zoom in (scale from 0 to 1) and zoom out (scale from 1 to 0)
+    - Support configurable zoom center point
+    - Combine with fade for smooth effect
+    - _Requirements: 10.4_
+
+  - [ ]* 15.7 Write property test for zoom transition behavior
+    - **Property 22: Transition Effect Behavior (Zoom)**
+    - **Validates: Requirements 10.1, 10.4**
+
+  - [x] 15.8 Implement RotateTransition effect
+    - Rotate images during transitions with configurable angle
+    - Support rotation direction and center point
+    - Combine with scale and fade effects
+    - Use Processing's rotate() and translate() functions
+    - _Requirements: 10.5_
+
+  - [ ]* 15.9 Write property test for rotate transition behavior
+    - **Property 22: Transition Effect Behavior (Rotate)**
+    - **Validates: Requirements 10.1, 10.5**
+
+  - [x] 15.10 Implement MorphTransition effect
+    - Blend between old and new images using shape interpolation
+    - Implement color blending and morphing effects
+    - Use Processing's blend() function with different blend modes
+    - Support vertex manipulation for organic transitions
+    - _Requirements: 10.6_
+
+  - [ ]* 15.11 Write property test for morph transition behavior
+    - **Property 22: Transition Effect Behavior (Morph)**
+    - **Validates: Requirements 10.1, 10.6**
+
+  - [x] 15.12 Implement transition coordination and stagger timing
+    - Coordinate multiple simultaneous image transitions
+    - Implement stagger timing with configurable delays
+    - Support transition parameter configuration (duration, easing, stagger)
+    - Add transition configuration loading to ConfigurationManager
+    - _Requirements: 10.7, 10.8, 11.3, 11.4_
+
+  - [ ]* 15.13 Write property test for transition parameter configuration
+    - **Property 23: Transition Parameter Configuration**
+    - **Validates: Requirements 10.7, 10.8, 11.1, 11.2, 11.3, 11.4, 11.5**
+
+  - [x] 15.14 Write unit tests for TransitionEngine and effects
+    - Test each transition effect with various configurations
+    - Test transition timing and easing functions
+    - Test stagger timing and coordination
+    - Test parameter validation and error handling
+    - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8_
+
+- [ ] 16. Implement visual effects manager
+  - [ ] 16.1 Create VisualEffectsManager class
+    - Create VisualEffectsManager class to apply effects to images
+    - Create VisualEffectsConfig class for effect parameters
+    - Create VisualEffectsState data model
+    - Add visual effects configuration loading to ConfigurationManager
+    - _Requirements: 12.6_
+
+  - [ ] 16.2 Implement blur effects
+    - Implement Gaussian blur with configurable radius
+    - Use Processing's filter(BLUR) or custom blur shader
+    - Support motion blur for moving images
+    - Implement selective blur (blur background, keep foreground sharp)
+    - _Requirements: 12.1_
+
+  - [ ]* 16.3 Write property test for blur effects
+    - **Property 24: Visual Effects Application (Blur)**
+    - **Validates: Requirements 12.1, 12.6**
+
+  - [ ] 16.4 Implement color filter effects
+    - Implement sepia tone effect using color matrix
+    - Implement grayscale conversion
+    - Implement color tinting with configurable hue/saturation
+    - Implement vintage/retro color grading effects
+    - Use Processing's tint() and colorMode() functions
+    - _Requirements: 12.2_
+
+  - [ ]* 16.5 Write property test for color filter effects
+    - **Property 24: Visual Effects Application (Color Filters)**
+    - **Validates: Requirements 12.2, 12.6**
+
+  - [ ] 16.6 Implement brightness and contrast adjustments
+    - Implement configurable brightness levels (-100% to +100%)
+    - Implement configurable contrast levels (-100% to +100%)
+    - Implement gamma correction
+    - Use Processing's tint() and custom pixel manipulation
+    - _Requirements: 12.3_
+
+  - [ ]* 16.7 Write property test for brightness/contrast effects
+    - **Property 24: Visual Effects Application (Brightness/Contrast)**
+    - **Validates: Requirements 12.3, 12.6**
+
+  - [ ] 16.8 Implement particle systems
+    - Generate particles around images during transitions
+    - Support configurable particle count, size, color, lifetime
+    - Implement physics simulation (gravity, wind, collision)
+    - Support different particle types (sparkles, smoke, fire, snow)
+    - Use Processing's PVector for particle physics
+    - _Requirements: 12.4_
+
+  - [ ]* 16.9 Write property test for particle systems
+    - **Property 24: Visual Effects Application (Particles)**
+    - **Validates: Requirements 12.4, 12.6**
+
+  - [ ] 16.10 Implement border effects
+    - Implement glow effect around image edges using blur and blend
+    - Implement drop shadow with configurable offset and blur
+    - Implement outline/stroke with configurable thickness and color
+    - Implement vintage frame effects
+    - _Requirements: 12.5_
+
+  - [ ]* 16.11 Write property test for border effects
+    - **Property 24: Visual Effects Application (Borders)**
+    - **Validates: Requirements 12.5, 12.6**
+
+  - [ ]* 16.12 Write property test for visual effects application
+    - **Property 24: Visual Effects Application (General)**
+    - **Validates: Requirements 12.6, 12.8**
+
+  - [ ]* 16.13 Write unit tests for VisualEffectsManager
+    - Test each visual effect with various configurations
+    - Test effect combination and interaction
+    - Test performance impact and quality reduction
+    - Test parameter validation and error handling
+    - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8_
+
+- [ ] 17. Enhance ImageDisplayManager with new engines
+  - [ ] 17.1 Update ImageDisplayManager to use LayoutEngine
+    - Integrate LayoutEngine for image positioning
+    - Replace hardcoded grid layout with configurable algorithms
+    - Add layout algorithm switching support
+    - Update displayCurrentImages() to use calculated positions
+    - _Requirements: 9.1, 9.6, 9.7_
+
+  - [ ] 17.2 Update ImageDisplayManager to use TransitionEngine
+    - Integrate TransitionEngine for image swapping
+    - Replace instant image swaps with animated transitions
+    - Add transition effect configuration support
+    - Update swapImages() to use transition effects
+    - _Requirements: 10.1, 10.7_
+
+  - [ ] 17.3 Update ImageDisplayManager to use VisualEffectsManager
+    - Integrate VisualEffectsManager for image enhancement
+    - Apply visual effects to all displayed images
+    - Add visual effects configuration support
+    - Update displayCurrentImages() to apply effects
+    - _Requirements: 12.6_
+
+  - [ ] 17.4 Implement frame-based animation system
+    - Add update() method with delta time parameter
+    - Update all animations and transitions each frame
+    - Maintain smooth 60 FPS performance
+    - Handle animation state management
+    - _Requirements: 7.3_
+
+  - [ ]* 17.5 Write unit tests for enhanced ImageDisplayManager
+    - Test integration with LayoutEngine
+    - Test integration with TransitionEngine
+    - Test integration with VisualEffectsManager
+    - Test frame-based animation system
+    - Test performance with multiple effects active
+    - _Requirements: 9.1, 10.1, 12.6_
+
+- [ ] 18. Update configuration management for new features
+  - [ ] 18.1 Enhance ConfigurationManager for layout configuration
+    - Add layout algorithm selection and parameters
+    - Add layout parameter validation and defaults
+    - Support dynamic layout parameter updates
+    - _Requirements: 9.6, 9.8, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6_
+
+  - [ ] 18.2 Enhance ConfigurationManager for transition configuration
+    - Add transition effect selection and parameters
+    - Add transition timing and easing configuration
+    - Support dynamic transition parameter updates
+    - _Requirements: 10.7, 11.1, 11.2, 11.3, 11.5_
+
+  - [ ] 18.3 Enhance ConfigurationManager for visual effects configuration
+    - Add visual effects selection and parameters
+    - Add effect intensity and quality configuration
+    - Support dynamic visual effects parameter updates
+    - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6_
+
+  - [ ]* 18.4 Write property test for invalid parameter handling
+    - **Property 26: Invalid Parameter Handling**
+    - **Validates: Requirements 11.6, 13.7**
+
+  - [ ]* 18.5 Write property test for dynamic parameter updates
+    - **Property 27: Dynamic Parameter Updates**
+    - **Validates: Requirements 11.7, 13.8**
+
+  - [ ]* 18.6 Write unit tests for enhanced ConfigurationManager
+    - Test loading enhanced configuration file
+    - Test parameter validation and clamping
+    - Test dynamic parameter updates
+    - Test error handling for invalid configurations
+    - _Requirements: 9.6, 10.7, 11.6, 12.6, 13.7_
+
+- [ ] 19. Update main Processing sketch for new features
+  - [ ] 19.1 Update iCandySketch setup() for new engines
+    - Initialize LayoutEngine with configured algorithm
+    - Initialize TransitionEngine with configured effects
+    - Initialize VisualEffectsManager with configured effects
+    - Pass engines to enhanced ImageDisplayManager
+    - _Requirements: 9.1, 10.1, 12.6_
+
+  - [ ] 19.2 Update iCandySketch draw() loop for animations
+    - Calculate delta time for smooth animations
+    - Update LayoutEngine, TransitionEngine, and VisualEffectsManager each frame
+    - Update enhanced ImageDisplayManager with delta time
+    - Maintain target frame rate with new features
+    - _Requirements: 7.3_
+
+  - [ ] 19.3 Implement comprehensive keyboard controls for interactive mode
+    - Add number keys (1-4) to switch layout algorithms with immediate visual feedback
+    - Add letter keys (Q-W-E-R-T) to switch transition effects with immediate application
+    - Add function keys (F1-F5) to toggle visual effects with immediate preview
+    - Add space bar for manual image swapping using current transition
+    - Add tab key to display settings overlay with current configuration and FPS
+    - Implement smooth transitions when switching between modes
+    - Display brief on-screen notifications when settings change
+    - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7_
+
+  - [ ] 19.4 Implement settings overlay and visual feedback system
+    - Create settings overlay UI showing current layout, transition, and effects
+    - Display performance metrics (FPS, effect quality level)
+    - Add configurable overlay duration and styling
+    - Implement fade-in/fade-out animations for overlay
+    - Add brief notification system for setting changes
+    - Ensure overlay doesn't interfere with main visual experience
+    - _Requirements: 14.5, 14.7_
+
+  - [ ]* 19.5 Write property test for interactive keyboard controls
+    - **Property 28: Interactive Keyboard Controls**
+    - **Validates: Requirements 14.1, 14.2, 14.3, 14.4, 14.6**
+
+  - [ ]* 19.6 Write integration tests for enhanced iCandySketch
+    - Test initialization with all new engines
+    - Test frame-based animation system
+    - Test comprehensive keyboard controls for all features
+    - Test settings overlay display and timing
+    - Test performance with all effects enabled
+    - Test smooth transitions between different modes
+    - _Requirements: 9.1, 10.1, 12.6, 14.1, 14.2, 14.3_
+
+- [ ] 20. Checkpoint - Ensure enhanced features tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 21. Implement error handling and logging
+  - [ ] 21.1 Add error handling throughout build phase
     - Network failure handling with retry logic
     - API rate limiting detection and backoff
     - Invalid text file handling
     - File system error handling
     - _Requirements: 1.5, 2.5, 8.4, 8.5_
 
-  - [ ]* 14.2 Write property test for download retry limit
+- [ ] 21. Implement error handling and logging
+  - [ ] 21.1 Add error handling throughout build phase
+    - Network failure handling with retry logic
+    - API rate limiting detection and backoff
+    - Invalid text file handling
+    - File system error handling
+    - _Requirements: 1.5, 2.5, 8.4, 8.5_
+
+  - [ ]* 21.2 Write property test for download retry limit
     - **Property 18: Download Retry Limit**
     - **Validates: Requirements 8.4**
 
-  - [ ] 14.3 Add error handling throughout run phase
+  - [ ] 21.3 Add error handling throughout run phase
     - Missing image file handling
     - Audio input failure fallback
     - Beat detection failure fallback
     - Invalid associations file handling
+    - Layout/transition/effects error handling
     - _Requirements: 8.1, 8.2, 8.3_
 
-  - [ ] 14.4 Implement logging strategy
+  - [ ] 21.4 Implement logging strategy
     - Create log file with timestamp
     - Log all errors with context
     - Log warnings for missing files
     - Log progress during build phase
+    - Log performance metrics for new features
     - _Requirements: 8.5_
 
-  - [ ]* 14.5 Write unit tests for error handling
+  - [ ]* 21.5 Write unit tests for error handling
     - Test network failure retry logic
     - Test missing file handling
     - Test audio fallback behavior
     - Test logging output
+    - Test error handling for new features
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 15. Create sample data and documentation
-  - [ ] 15.1 Create sample text scripts
+- [ ] 22. Create enhanced sample data and documentation
+  - [ ] 22.1 Create sample text scripts
     - Short sample (10-20 words)
     - Medium sample (50-100 words)
     - Long sample (200+ words)
     - _Requirements: 1.1_
 
-  - [ ] 15.2 Create example configuration file
-    - Document all configuration options
-    - Provide sensible defaults
+  - [ ] 22.2 Create enhanced example configuration file
+    - Document all configuration options including new features
+    - Provide sensible defaults for layout, transition, and visual effects
     - Include comments explaining each setting
-    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
+    - Provide multiple configuration presets (minimal, artistic, performance)
+    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 9.6, 10.7, 12.6_
 
-  - [x] 15.3 Create README with usage instructions
-    - Explain build phase usage (command-line: java BuildMain <textfile>)
-    - Explain run phase usage (run Processing sketch)
-    - Document keyboard controls (left/right arrows)
-    - Document configuration options (simultaneousImageCount, loopPhrases, etc.)
-    - Provide troubleshooting tips
-    - Include Unsplash API key setup instructions
+  - [ ] 22.3 Update README with enhanced interactive features documentation
+    - Document all keyboard controls with clear key mappings
+    - Document layout algorithms and their visual characteristics
+    - Document transition effects and their parameters
+    - Document visual effects and their configurations
+    - Document settings overlay and performance monitoring
+    - Provide interactive usage examples and workflows
+    - Include performance tuning tips for different hardware
+    - Add troubleshooting section for keyboard controls
+    - _Requirements: 9.1, 10.1, 12.1, 14.1, 14.2, 14.3_
 
-- [ ] 16. Final integration and testing
-  - [ ] 16.1 Run complete build phase with sample text
+- [ ] 23. Final integration and testing with enhanced features
+  - [ ] 23.1 Run complete build phase with sample text
     - Verify images are downloaded
     - Verify associations are saved
     - Verify error handling works
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
 
-  - [ ] 16.2 Run complete run phase with built associations
-    - Verify phrases display correctly and advance automatically
-    - Verify images display and swap on beats and arrow keys
-    - Verify phrase looping works
-    - Verify beat detection works (if audio available)
-    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.7, 4.8, 4.9, 5.1, 5.2, 5.3, 5.4, 5.5_
+  - [ ] 23.2 Run complete run phase with enhanced features
+    - Verify all layout algorithms work correctly
+    - Verify all transition effects work smoothly
+    - Verify all visual effects apply correctly
+    - Verify performance remains smooth (30+ FPS)
+    - Verify keyboard controls for new features
+    - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 10.1, 10.2, 10.3, 10.4, 10.5, 12.1, 12.2, 12.3, 12.4, 12.5_
 
-  - [ ]* 16.3 Run full property-based test suite
-    - Execute all 18 property tests
+  - [ ] 23.3 Test configuration combinations
+    - Test different layout + transition + effects combinations
+    - Verify no conflicts between features
+    - Test performance with maximum effects enabled
+    - Test graceful degradation when performance drops
+    - _Requirements: 9.6, 10.7, 12.6, 12.7_
+
+  - [ ]* 23.4 Run full enhanced property-based test suite
+    - Execute all 27 property tests (original 18 + new 9)
     - Verify 100+ iterations per test
     - Fix any failures discovered
     - _All Requirements_
 
-- [ ] 17. Final checkpoint - Ensure all tests pass
+- [ ] 24. Final checkpoint - Ensure all enhanced tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
@@ -382,4 +762,7 @@ This implementation plan breaks down the iCandy visual text processor into discr
 - Property tests validate universal correctness properties
 - Unit tests validate specific examples and edge cases
 - The build phase (tasks 1-6) can be completed independently before the run phase (tasks 7-13)
-- Integration testing (task 16) validates the complete system end-to-end
+- Enhanced features (tasks 14-19) add configurable layouts, transitions, and visual effects
+- New features leverage Processing.org's advanced graphics capabilities
+- Integration testing (task 23) validates the complete enhanced system end-to-end
+- Performance testing ensures smooth operation with all effects enabled
