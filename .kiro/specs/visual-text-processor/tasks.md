@@ -457,15 +457,15 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - Test parameter validation and error handling
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8_
 
-- [ ] 16. Implement visual effects manager
-  - [ ] 16.1 Create VisualEffectsManager class
+- [x] 16. Implement visual effects manager
+  - [x] 16.1 Create VisualEffectsManager class
     - Create VisualEffectsManager class to apply effects to images
     - Create VisualEffectsConfig class for effect parameters
     - Create VisualEffectsState data model
     - Add visual effects configuration loading to ConfigurationManager
     - _Requirements: 12.6_
 
-  - [ ] 16.2 Implement blur effects
+  - [x] 16.2 Implement blur effects
     - Implement Gaussian blur with configurable radius
     - Use Processing's filter(BLUR) or custom blur shader
     - Support motion blur for moving images
@@ -476,7 +476,7 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - **Property 24: Visual Effects Application (Blur)**
     - **Validates: Requirements 12.1, 12.6**
 
-  - [ ] 16.4 Implement color filter effects
+  - [x] 16.4 Implement color filter effects
     - Implement sepia tone effect using color matrix
     - Implement grayscale conversion
     - Implement color tinting with configurable hue/saturation
@@ -488,7 +488,7 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - **Property 24: Visual Effects Application (Color Filters)**
     - **Validates: Requirements 12.2, 12.6**
 
-  - [ ] 16.6 Implement brightness and contrast adjustments
+  - [x] 16.6 Implement brightness and contrast adjustments
     - Implement configurable brightness levels (-100% to +100%)
     - Implement configurable contrast levels (-100% to +100%)
     - Implement gamma correction
@@ -499,7 +499,7 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - **Property 24: Visual Effects Application (Brightness/Contrast)**
     - **Validates: Requirements 12.3, 12.6**
 
-  - [ ] 16.8 Implement particle systems
+  - [x] 16.8 Implement particle systems
     - Generate particles around images during transitions
     - Support configurable particle count, size, color, lifetime
     - Implement physics simulation (gravity, wind, collision)
@@ -511,7 +511,7 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - **Property 24: Visual Effects Application (Particles)**
     - **Validates: Requirements 12.4, 12.6**
 
-  - [ ] 16.10 Implement border effects
+  - [x] 16.10 Implement border effects
     - Implement glow effect around image edges using blur and blend
     - Implement drop shadow with configurable offset and blur
     - Implement outline/stroke with configurable thickness and color

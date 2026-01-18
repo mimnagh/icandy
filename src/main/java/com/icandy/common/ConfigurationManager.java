@@ -3,6 +3,7 @@ package com.icandy.common;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.icandy.run.LayoutConfig;
+import com.icandy.run.VisualEffectsConfig;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -57,6 +58,9 @@ public class ConfigurationManager {
     private String blendMode = "normal";
     private float morphIntensity = 1.0f;
     
+    // Visual effects configuration
+    private VisualEffectsConfig visualEffectsConfig = new VisualEffectsConfig();
+    
     /**
      * Creates a ConfigurationManager with default values.
      */
@@ -107,6 +111,11 @@ public class ConfigurationManager {
         // Load transition configuration
         if (config.has("transitions")) {
             loadTransitionConfiguration(config.getAsJsonObject("transitions"));
+        }
+        
+        // Load visual effects configuration
+        if (config.has("visualEffects")) {
+            loadVisualEffectsConfiguration(config.getAsJsonObject("visualEffects"));
         }
     }
     
@@ -756,6 +765,235 @@ public class ConfigurationManager {
     }
     
     /**
+     * Loads visual effects configuration from JSON object.
+     */
+    private void loadVisualEffectsConfiguration(JsonObject visualEffectsConfig) {
+        // Blur settings
+        if (visualEffectsConfig.has("enableBlur")) {
+            try {
+                this.visualEffectsConfig.enableBlur = visualEffectsConfig.get("enableBlur").getAsBoolean();
+            } catch (Exception e) {
+                logWarning("Invalid enableBlur value, using default: " + this.visualEffectsConfig.enableBlur);
+            }
+        }
+        
+        if (visualEffectsConfig.has("blurRadius")) {
+            try {
+                float value = visualEffectsConfig.get("blurRadius").getAsFloat();
+                if (value >= 0) {
+                    this.visualEffectsConfig.blurRadius = value;
+                } else {
+                    logWarning("Blur radius cannot be negative, using default: " + this.visualEffectsConfig.blurRadius);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid blurRadius value, using default: " + this.visualEffectsConfig.blurRadius);
+            }
+        }
+        
+        // Color filter settings
+        if (visualEffectsConfig.has("colorFilter")) {
+            try {
+                String filter = visualEffectsConfig.get("colorFilter").getAsString().toUpperCase();
+                this.visualEffectsConfig.colorFilter = VisualEffectsConfig.ColorFilterType.valueOf(filter);
+            } catch (Exception e) {
+                logWarning("Invalid colorFilter value, using default: " + this.visualEffectsConfig.colorFilter);
+            }
+        }
+        
+        if (visualEffectsConfig.has("colorIntensity")) {
+            try {
+                float value = visualEffectsConfig.get("colorIntensity").getAsFloat();
+                if (value >= 0 && value <= 2.0f) {
+                    this.visualEffectsConfig.colorIntensity = value;
+                } else {
+                    logWarning("Color intensity must be between 0.0 and 2.0, using default: " + this.visualEffectsConfig.colorIntensity);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid colorIntensity value, using default: " + this.visualEffectsConfig.colorIntensity);
+            }
+        }
+        
+        if (visualEffectsConfig.has("tintColor")) {
+            try {
+                String colorStr = visualEffectsConfig.get("tintColor").getAsString();
+                if (isValidHexColor(colorStr)) {
+                    this.visualEffectsConfig.tintColor = parseHexColor(colorStr);
+                } else {
+                    logWarning("Invalid tintColor format, using default");
+                }
+            } catch (Exception e) {
+                logWarning("Invalid tintColor value, using default");
+            }
+        }
+        
+        // Brightness/contrast settings
+        if (visualEffectsConfig.has("brightness")) {
+            try {
+                float value = visualEffectsConfig.get("brightness").getAsFloat();
+                if (value >= -1.0f && value <= 1.0f) {
+                    this.visualEffectsConfig.brightness = value;
+                } else {
+                    logWarning("Brightness must be between -1.0 and 1.0, using default: " + this.visualEffectsConfig.brightness);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid brightness value, using default: " + this.visualEffectsConfig.brightness);
+            }
+        }
+        
+        if (visualEffectsConfig.has("contrast")) {
+            try {
+                float value = visualEffectsConfig.get("contrast").getAsFloat();
+                if (value >= -1.0f && value <= 1.0f) {
+                    this.visualEffectsConfig.contrast = value;
+                } else {
+                    logWarning("Contrast must be between -1.0 and 1.0, using default: " + this.visualEffectsConfig.contrast);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid contrast value, using default: " + this.visualEffectsConfig.contrast);
+            }
+        }
+        
+        if (visualEffectsConfig.has("gamma")) {
+            try {
+                float value = visualEffectsConfig.get("gamma").getAsFloat();
+                if (value >= 0.1f && value <= 3.0f) {
+                    this.visualEffectsConfig.gamma = value;
+                } else {
+                    logWarning("Gamma must be between 0.1 and 3.0, using default: " + this.visualEffectsConfig.gamma);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid gamma value, using default: " + this.visualEffectsConfig.gamma);
+            }
+        }
+        
+        // Particle system settings
+        if (visualEffectsConfig.has("enableParticles")) {
+            try {
+                this.visualEffectsConfig.enableParticles = visualEffectsConfig.get("enableParticles").getAsBoolean();
+            } catch (Exception e) {
+                logWarning("Invalid enableParticles value, using default: " + this.visualEffectsConfig.enableParticles);
+            }
+        }
+        
+        if (visualEffectsConfig.has("particleCount")) {
+            try {
+                int value = visualEffectsConfig.get("particleCount").getAsInt();
+                if (value >= 0 && value <= 1000) {
+                    this.visualEffectsConfig.particleCount = value;
+                } else {
+                    logWarning("Particle count must be between 0 and 1000, using default: " + this.visualEffectsConfig.particleCount);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid particleCount value, using default: " + this.visualEffectsConfig.particleCount);
+            }
+        }
+        
+        if (visualEffectsConfig.has("particleType")) {
+            try {
+                String type = visualEffectsConfig.get("particleType").getAsString().toUpperCase();
+                this.visualEffectsConfig.particleType = VisualEffectsConfig.ParticleType.valueOf(type);
+            } catch (Exception e) {
+                logWarning("Invalid particleType value, using default: " + this.visualEffectsConfig.particleType);
+            }
+        }
+        
+        if (visualEffectsConfig.has("particleColor")) {
+            try {
+                String colorStr = visualEffectsConfig.get("particleColor").getAsString();
+                if (isValidHexColor(colorStr)) {
+                    this.visualEffectsConfig.particleColor = parseHexColor(colorStr);
+                } else {
+                    logWarning("Invalid particleColor format, using default");
+                }
+            } catch (Exception e) {
+                logWarning("Invalid particleColor value, using default");
+            }
+        }
+        
+        if (visualEffectsConfig.has("particleLifetime")) {
+            try {
+                float value = visualEffectsConfig.get("particleLifetime").getAsFloat();
+                if (value >= 100.0f && value <= 10000.0f) {
+                    this.visualEffectsConfig.particleLifetime = value;
+                } else {
+                    logWarning("Particle lifetime must be between 100 and 10000 ms, using default: " + this.visualEffectsConfig.particleLifetime);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid particleLifetime value, using default: " + this.visualEffectsConfig.particleLifetime);
+            }
+        }
+        
+        // Border effects settings
+        if (visualEffectsConfig.has("enableGlow")) {
+            try {
+                this.visualEffectsConfig.enableGlow = visualEffectsConfig.get("enableGlow").getAsBoolean();
+            } catch (Exception e) {
+                logWarning("Invalid enableGlow value, using default: " + this.visualEffectsConfig.enableGlow);
+            }
+        }
+        
+        if (visualEffectsConfig.has("glowRadius")) {
+            try {
+                float value = visualEffectsConfig.get("glowRadius").getAsFloat();
+                if (value >= 0) {
+                    this.visualEffectsConfig.glowRadius = value;
+                } else {
+                    logWarning("Glow radius cannot be negative, using default: " + this.visualEffectsConfig.glowRadius);
+                }
+            } catch (Exception e) {
+                logWarning("Invalid glowRadius value, using default: " + this.visualEffectsConfig.glowRadius);
+            }
+        }
+        
+        if (visualEffectsConfig.has("glowColor")) {
+            try {
+                String colorStr = visualEffectsConfig.get("glowColor").getAsString();
+                if (isValidHexColor(colorStr)) {
+                    this.visualEffectsConfig.glowColor = parseHexColor(colorStr);
+                } else {
+                    logWarning("Invalid glowColor format, using default");
+                }
+            } catch (Exception e) {
+                logWarning("Invalid glowColor value, using default");
+            }
+        }
+        
+        if (visualEffectsConfig.has("enableShadow")) {
+            try {
+                this.visualEffectsConfig.enableShadow = visualEffectsConfig.get("enableShadow").getAsBoolean();
+            } catch (Exception e) {
+                logWarning("Invalid enableShadow value, using default: " + this.visualEffectsConfig.enableShadow);
+            }
+        }
+        
+        if (visualEffectsConfig.has("shadowOffset")) {
+            try {
+                float value = visualEffectsConfig.get("shadowOffset").getAsFloat();
+                this.visualEffectsConfig.shadowOffsetX = value;
+                this.visualEffectsConfig.shadowOffsetY = value;
+            } catch (Exception e) {
+                logWarning("Invalid shadowOffset value, using defaults");
+            }
+        }
+        
+        // Validate the final configuration
+        this.visualEffectsConfig.validate();
+    }
+    
+    /**
+     * Parses a hex color string to an integer color value.
+     * 
+     * @param hexColor Hex color string (e.g., "#FF0000")
+     * @return Integer color value
+     */
+    private int parseHexColor(String hexColor) {
+        if (hexColor.startsWith("#")) {
+            hexColor = hexColor.substring(1);
+        }
+        return (int) Long.parseLong("FF" + hexColor, 16); // Add full alpha
+    }
+    
+    /**
      * Check if a layout algorithm name is valid.
      */
     private boolean isValidLayoutAlgorithm(String algorithm) {
@@ -1017,6 +1255,29 @@ public class ConfigurationManager {
             this.transitionEasing = easing.toLowerCase();
         } else {
             logWarning("Invalid easing function: " + easing);
+        }
+    }
+    
+    // Visual effects configuration getters
+    
+    /**
+     * Gets the current visual effects configuration.
+     * 
+     * @return A copy of the current visual effects configuration
+     */
+    public VisualEffectsConfig getVisualEffectsConfig() {
+        return visualEffectsConfig.copy();
+    }
+    
+    /**
+     * Updates the visual effects configuration.
+     * 
+     * @param config The new visual effects configuration
+     */
+    public void setVisualEffectsConfig(VisualEffectsConfig config) {
+        if (config != null) {
+            this.visualEffectsConfig = config.copy();
+            this.visualEffectsConfig.validate();
         }
     }
 }
