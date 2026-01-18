@@ -1177,6 +1177,176 @@ public class ConfigurationManager {
         }
     }
     
+    /**
+     * Update specific layout parameters for the current algorithm.
+     * 
+     * @param parameterName The name of the parameter to update
+     * @param value The new value for the parameter
+     */
+    public void updateLayoutParameter(String parameterName, float value) {
+        if (parameterName == null) {
+            logWarning("Layout parameter name cannot be null");
+            return;
+        }
+        
+        switch (parameterName.toLowerCase()) {
+            // Global parameters
+            case "globalscale":
+                layoutConfig.globalScale = Math.max(0.1f, Math.min(5.0f, value));
+                break;
+                
+            // Grid parameters
+            case "gridspacing":
+                layoutConfig.gridSpacing = Math.max(0.0f, Math.min(100.0f, value));
+                break;
+            case "gridpadding":
+                layoutConfig.gridPadding = Math.max(0.0f, Math.min(200.0f, value));
+                break;
+            case "gridrows":
+                layoutConfig.gridRows = Math.max(0, Math.min(10, (int) value));
+                break;
+            case "gridcols":
+                layoutConfig.gridCols = Math.max(0, Math.min(10, (int) value));
+                break;
+                
+            // Collage parameters
+            case "minsize":
+                layoutConfig.minSize = Math.max(0.1f, Math.min(2.0f, value));
+                if (layoutConfig.minSize > layoutConfig.maxSize) {
+                    layoutConfig.maxSize = layoutConfig.minSize;
+                }
+                break;
+            case "maxsize":
+                layoutConfig.maxSize = Math.max(layoutConfig.minSize, Math.min(3.0f, value));
+                break;
+            case "minrotation":
+                layoutConfig.minRotation = Math.max(-180.0f, Math.min(180.0f, value));
+                if (layoutConfig.minRotation > layoutConfig.maxRotation) {
+                    layoutConfig.maxRotation = layoutConfig.minRotation;
+                }
+                break;
+            case "maxrotation":
+                layoutConfig.maxRotation = Math.max(layoutConfig.minRotation, Math.min(180.0f, value));
+                break;
+            case "overlapamount":
+                layoutConfig.overlapAmount = Math.max(0.0f, Math.min(1.0f, value));
+                break;
+                
+            // Circular parameters
+            case "circleradius":
+                layoutConfig.circleRadius = Math.max(50.0f, Math.min(1000.0f, value));
+                break;
+            case "arcspan":
+                layoutConfig.arcSpan = Math.max(30.0f, Math.min(360.0f, value));
+                break;
+                
+            // Flowing parameters
+            case "pathcurvature":
+                layoutConfig.pathCurvature = Math.max(0.0f, Math.min(2.0f, value));
+                break;
+            case "pathspacing":
+                layoutConfig.pathSpacing = Math.max(10.0f, Math.min(500.0f, value));
+                break;
+                
+            default:
+                logWarning("Unknown layout parameter: " + parameterName);
+                break;
+        }
+    }
+    
+    /**
+     * Update layout display region.
+     * 
+     * @param x X coordinate of the region
+     * @param y Y coordinate of the region
+     * @param width Width of the region
+     * @param height Height of the region
+     */
+    public void updateLayoutDisplayRegion(float x, float y, float width, float height) {
+        if (width > 0 && height > 0) {
+            layoutConfig.displayRegion = new LayoutConfig.Rectangle(x, y, width, height);
+        } else {
+            logWarning("Display region width and height must be positive");
+        }
+    }
+    
+    /**
+     * Update layout aspect ratio mode.
+     * 
+     * @param mode The new aspect ratio mode ("preserve", "stretch", "crop")
+     */
+    public void updateLayoutAspectRatioMode(String mode) {
+        if (mode != null) {
+            try {
+                LayoutConfig.AspectRatioMode aspectMode = LayoutConfig.AspectRatioMode.valueOf(mode.toUpperCase());
+                layoutConfig.aspectRatioMode = aspectMode;
+            } catch (IllegalArgumentException e) {
+                logWarning("Invalid aspect ratio mode: " + mode);
+            }
+        }
+    }
+    
+    /**
+     * Update grid alignment.
+     * 
+     * @param alignment The new alignment ("center", "left", "right", "top", "bottom", etc.)
+     */
+    public void updateGridAlignment(String alignment) {
+        if (alignment != null) {
+            try {
+                LayoutConfig.Alignment gridAlign = LayoutConfig.Alignment.valueOf(alignment.toUpperCase());
+                layoutConfig.gridAlignment = gridAlign;
+            } catch (IllegalArgumentException e) {
+                logWarning("Invalid grid alignment: " + alignment);
+            }
+        }
+    }
+    
+    /**
+     * Update circular rotation direction.
+     * 
+     * @param direction The new rotation direction ("clockwise", "counterclockwise")
+     */
+    public void updateCircularRotationDirection(String direction) {
+        if (direction != null) {
+            try {
+                LayoutConfig.RotationDirection rotDir = LayoutConfig.RotationDirection.valueOf(direction.toUpperCase());
+                layoutConfig.rotationDirection = rotDir;
+            } catch (IllegalArgumentException e) {
+                logWarning("Invalid rotation direction: " + direction);
+            }
+        }
+    }
+    
+    /**
+     * Update flowing direction.
+     * 
+     * @param direction The new flow direction ("horizontal", "vertical", "diagonal_up", "diagonal_down")
+     */
+    public void updateFlowingDirection(String direction) {
+        if (direction != null) {
+            try {
+                LayoutConfig.FlowDirection flowDir = LayoutConfig.FlowDirection.valueOf(direction.toUpperCase());
+                layoutConfig.flowDirection = flowDir;
+            } catch (IllegalArgumentException e) {
+                logWarning("Invalid flow direction: " + direction);
+            }
+        }
+    }
+    
+    /**
+     * Set layout transition duration.
+     * 
+     * @param duration The new transition duration in milliseconds
+     */
+    public void setLayoutTransitionDuration(float duration) {
+        if (duration > 0) {
+            this.layoutTransitionDuration = duration;
+        } else {
+            logWarning("Layout transition duration must be positive: " + duration);
+        }
+    }
+    
     // Transition configuration getters
     
     public String getCurrentTransitionEffect() {
@@ -1258,6 +1428,251 @@ public class ConfigurationManager {
         }
     }
     
+    /**
+     * Create a TransitionConfig object from current settings.
+     * 
+     * @return A new TransitionConfig with current settings
+     */
+    public TransitionConfig createTransitionConfig() {
+        TransitionConfig config = new TransitionConfig();
+        config.setDuration(this.transitionDuration);
+        
+        // Convert string easing to enum
+        EasingFunction easingEnum;
+        switch (this.transitionEasing.toLowerCase()) {
+            case "linear":
+                easingEnum = EasingFunction.LINEAR;
+                break;
+            case "ease_in":
+                easingEnum = EasingFunction.EASE_IN;
+                break;
+            case "ease_out":
+                easingEnum = EasingFunction.EASE_OUT;
+                break;
+            case "ease_in_out":
+                easingEnum = EasingFunction.EASE_IN_OUT;
+                break;
+            case "bounce":
+                easingEnum = EasingFunction.BOUNCE;
+                break;
+            case "elastic":
+                easingEnum = EasingFunction.ELASTIC;
+                break;
+            default:
+                easingEnum = EasingFunction.EASE_IN_OUT;
+                break;
+        }
+        config.setEasingFunction(easingEnum);
+        
+        config.setEnableStagger(this.enableStagger);
+        config.setStaggerDelay(this.staggerDelay);
+        
+        // Convert string slide direction to enum
+        TransitionConfig.SlideDirection slideDir;
+        switch (this.slideDirection.toLowerCase()) {
+            case "up":
+                slideDir = TransitionConfig.SlideDirection.UP;
+                break;
+            case "down":
+                slideDir = TransitionConfig.SlideDirection.DOWN;
+                break;
+            case "left":
+                slideDir = TransitionConfig.SlideDirection.LEFT;
+                break;
+            case "right":
+                slideDir = TransitionConfig.SlideDirection.RIGHT;
+                break;
+            case "up_left":
+                slideDir = TransitionConfig.SlideDirection.UP_LEFT;
+                break;
+            case "up_right":
+                slideDir = TransitionConfig.SlideDirection.UP_RIGHT;
+                break;
+            case "down_left":
+                slideDir = TransitionConfig.SlideDirection.DOWN_LEFT;
+                break;
+            case "down_right":
+                slideDir = TransitionConfig.SlideDirection.DOWN_RIGHT;
+                break;
+            default:
+                slideDir = TransitionConfig.SlideDirection.LEFT;
+                break;
+        }
+        config.setSlideDirection(slideDir);
+        
+        // Convert string zoom mode to enum
+        TransitionConfig.ZoomMode zoomModeEnum;
+        switch (this.zoomMode.toLowerCase()) {
+            case "zoom_in":
+                zoomModeEnum = TransitionConfig.ZoomMode.ZOOM_IN;
+                break;
+            case "zoom_out":
+                zoomModeEnum = TransitionConfig.ZoomMode.ZOOM_OUT;
+                break;
+            case "zoom_both":
+                zoomModeEnum = TransitionConfig.ZoomMode.ZOOM_BOTH;
+                break;
+            default:
+                zoomModeEnum = TransitionConfig.ZoomMode.ZOOM_IN;
+                break;
+        }
+        config.setZoomMode(zoomModeEnum);
+        
+        config.setRotationAngle(this.rotationAngle);
+        
+        // Convert string blend mode to enum
+        TransitionConfig.BlendMode blendModeEnum;
+        switch (this.blendMode.toLowerCase()) {
+            case "normal":
+                blendModeEnum = TransitionConfig.BlendMode.NORMAL;
+                break;
+            case "multiply":
+                blendModeEnum = TransitionConfig.BlendMode.MULTIPLY;
+                break;
+            case "screen":
+                blendModeEnum = TransitionConfig.BlendMode.SCREEN;
+                break;
+            case "overlay":
+                blendModeEnum = TransitionConfig.BlendMode.OVERLAY;
+                break;
+            case "soft_light":
+                blendModeEnum = TransitionConfig.BlendMode.SOFT_LIGHT;
+                break;
+            case "hard_light":
+                blendModeEnum = TransitionConfig.BlendMode.HARD_LIGHT;
+                break;
+            case "color_dodge":
+                blendModeEnum = TransitionConfig.BlendMode.COLOR_DODGE;
+                break;
+            case "color_burn":
+                blendModeEnum = TransitionConfig.BlendMode.COLOR_BURN;
+                break;
+            default:
+                blendModeEnum = TransitionConfig.BlendMode.NORMAL;
+                break;
+        }
+        config.setBlendMode(blendModeEnum);
+        
+        return config;
+    }
+    
+    /**
+     * Update transition configuration from a TransitionConfig object.
+     * 
+     * @param config The new transition configuration
+     */
+    public void updateTransitionConfig(TransitionConfig config) {
+        if (config != null) {
+            this.transitionDuration = config.getDuration();
+            this.transitionEasing = config.getEasingFunction().name().toLowerCase();
+            this.enableStagger = config.isEnableStagger();
+            this.staggerDelay = config.getStaggerDelay();
+            this.slideDirection = config.getSlideDirection().name().toLowerCase();
+            this.zoomMode = config.getZoomMode().name().toLowerCase();
+            this.rotationAngle = config.getRotationAngle();
+            this.blendMode = config.getBlendMode().name().toLowerCase();
+        }
+    }
+    
+    /**
+     * Update specific transition parameters.
+     * 
+     * @param parameterName The name of the parameter to update
+     * @param value The new value for the parameter
+     */
+    public void updateTransitionParameter(String parameterName, float value) {
+        if (parameterName == null) {
+            logWarning("Transition parameter name cannot be null");
+            return;
+        }
+        
+        switch (parameterName.toLowerCase()) {
+            case "duration":
+                setTransitionDuration(value);
+                break;
+            case "staggerdelay":
+                this.staggerDelay = Math.max(0.0f, value);
+                break;
+            case "rotationangle":
+                this.rotationAngle = value;
+                break;
+            case "morphintensity":
+                this.morphIntensity = Math.max(0.0f, Math.min(1.0f, value));
+                break;
+            default:
+                logWarning("Unknown transition parameter: " + parameterName);
+                break;
+        }
+    }
+    
+    /**
+     * Update transition boolean parameters.
+     * 
+     * @param parameterName The name of the parameter to update
+     * @param value The new boolean value
+     */
+    public void updateTransitionParameter(String parameterName, boolean value) {
+        if (parameterName == null) {
+            logWarning("Transition parameter name cannot be null");
+            return;
+        }
+        
+        switch (parameterName.toLowerCase()) {
+            case "enablestagger":
+                this.enableStagger = value;
+                break;
+            default:
+                logWarning("Unknown boolean transition parameter: " + parameterName);
+                break;
+        }
+    }
+    
+    /**
+     * Update transition string parameters.
+     * 
+     * @param parameterName The name of the parameter to update
+     * @param value The new string value
+     */
+    public void updateTransitionParameter(String parameterName, String value) {
+        if (parameterName == null || value == null) {
+            logWarning("Transition parameter name and value cannot be null");
+            return;
+        }
+        
+        switch (parameterName.toLowerCase()) {
+            case "effect":
+                setCurrentTransitionEffect(value);
+                break;
+            case "easing":
+                setTransitionEasing(value);
+                break;
+            case "slidedirection":
+                if (isValidSlideDirection(value.toLowerCase())) {
+                    this.slideDirection = value.toLowerCase();
+                } else {
+                    logWarning("Invalid slide direction: " + value);
+                }
+                break;
+            case "zoommode":
+                if (isValidZoomMode(value.toLowerCase())) {
+                    this.zoomMode = value.toLowerCase();
+                } else {
+                    logWarning("Invalid zoom mode: " + value);
+                }
+                break;
+            case "blendmode":
+                if (isValidBlendMode(value.toLowerCase())) {
+                    this.blendMode = value.toLowerCase();
+                } else {
+                    logWarning("Invalid blend mode: " + value);
+                }
+                break;
+            default:
+                logWarning("Unknown string transition parameter: " + parameterName);
+                break;
+        }
+    }
+    
     // Visual effects configuration getters
     
     /**
@@ -1279,5 +1694,280 @@ public class ConfigurationManager {
             this.visualEffectsConfig = config.copy();
             this.visualEffectsConfig.validate();
         }
+    }
+    
+    /**
+     * Update specific visual effects parameters.
+     * 
+     * @param parameterName The name of the parameter to update
+     * @param value The new value for the parameter
+     */
+    public void updateVisualEffectsParameter(String parameterName, float value) {
+        if (parameterName == null) {
+            logWarning("Visual effects parameter name cannot be null");
+            return;
+        }
+        
+        switch (parameterName.toLowerCase()) {
+            // Blur parameters
+            case "blurradius":
+                visualEffectsConfig.blurRadius = Math.max(0.0f, Math.min(50.0f, value));
+                break;
+                
+            // Color filter parameters
+            case "colorintensity":
+                visualEffectsConfig.colorIntensity = Math.max(0.0f, Math.min(2.0f, value));
+                break;
+                
+            // Brightness/contrast parameters
+            case "brightness":
+                visualEffectsConfig.brightness = Math.max(-1.0f, Math.min(1.0f, value));
+                break;
+            case "contrast":
+                visualEffectsConfig.contrast = Math.max(-1.0f, Math.min(1.0f, value));
+                break;
+            case "gamma":
+                visualEffectsConfig.gamma = Math.max(0.1f, Math.min(3.0f, value));
+                break;
+                
+            // Particle system parameters
+            case "particlecount":
+                visualEffectsConfig.particleCount = Math.max(0, Math.min(1000, (int) value));
+                break;
+            case "particlelifetime":
+                visualEffectsConfig.particleLifetime = Math.max(100.0f, Math.min(10000.0f, value));
+                break;
+            case "particlesize":
+                visualEffectsConfig.particleSize = Math.max(0.5f, Math.min(20.0f, value));
+                break;
+            case "particlespeed":
+                visualEffectsConfig.particleSpeed = Math.max(0.0f, Math.min(500.0f, value));
+                break;
+                
+            // Border effects parameters
+            case "glowradius":
+                visualEffectsConfig.glowRadius = Math.max(0.0f, Math.min(50.0f, value));
+                break;
+            case "shadowoffsetx":
+                visualEffectsConfig.shadowOffsetX = value;
+                break;
+            case "shadowoffsety":
+                visualEffectsConfig.shadowOffsetY = value;
+                break;
+            case "shadowblur":
+                visualEffectsConfig.shadowBlur = Math.max(0.0f, Math.min(20.0f, value));
+                break;
+            case "outlinethickness":
+                visualEffectsConfig.outlineThickness = Math.max(0.0f, Math.min(10.0f, value));
+                break;
+                
+            default:
+                logWarning("Unknown visual effects parameter: " + parameterName);
+                break;
+        }
+    }
+    
+    /**
+     * Update visual effects boolean parameters.
+     * 
+     * @param parameterName The name of the parameter to update
+     * @param value The new boolean value
+     */
+    public void updateVisualEffectsParameter(String parameterName, boolean value) {
+        if (parameterName == null) {
+            logWarning("Visual effects parameter name cannot be null");
+            return;
+        }
+        
+        switch (parameterName.toLowerCase()) {
+            case "enableblur":
+                visualEffectsConfig.enableBlur = value;
+                break;
+            case "enablemotionblur":
+                visualEffectsConfig.enableMotionBlur = value;
+                break;
+            case "enableselectiveblur":
+                visualEffectsConfig.enableSelectiveBlur = value;
+                break;
+            case "enableparticles":
+                visualEffectsConfig.enableParticles = value;
+                break;
+            case "enableglow":
+                visualEffectsConfig.enableGlow = value;
+                break;
+            case "enableshadow":
+                visualEffectsConfig.enableShadow = value;
+                break;
+            case "enableoutline":
+                visualEffectsConfig.enableOutline = value;
+                break;
+            default:
+                logWarning("Unknown boolean visual effects parameter: " + parameterName);
+                break;
+        }
+    }
+    
+    /**
+     * Update visual effects string parameters.
+     * 
+     * @param parameterName The name of the parameter to update
+     * @param value The new string value
+     */
+    public void updateVisualEffectsParameter(String parameterName, String value) {
+        if (parameterName == null || value == null) {
+            logWarning("Visual effects parameter name and value cannot be null");
+            return;
+        }
+        
+        switch (parameterName.toLowerCase()) {
+            case "colorfilter":
+                try {
+                    VisualEffectsConfig.ColorFilterType filter = VisualEffectsConfig.ColorFilterType.valueOf(value.toUpperCase());
+                    visualEffectsConfig.colorFilter = filter;
+                } catch (IllegalArgumentException e) {
+                    logWarning("Invalid color filter type: " + value);
+                }
+                break;
+            case "particletype":
+                try {
+                    VisualEffectsConfig.ParticleType type = VisualEffectsConfig.ParticleType.valueOf(value.toUpperCase());
+                    visualEffectsConfig.particleType = type;
+                } catch (IllegalArgumentException e) {
+                    logWarning("Invalid particle type: " + value);
+                }
+                break;
+            default:
+                logWarning("Unknown string visual effects parameter: " + parameterName);
+                break;
+        }
+    }
+    
+    /**
+     * Update visual effects color parameters.
+     * 
+     * @param parameterName The name of the parameter to update
+     * @param colorValue The new color value as hex string (e.g., "#FF0000")
+     */
+    public void updateVisualEffectsColor(String parameterName, String colorValue) {
+        if (parameterName == null || colorValue == null) {
+            logWarning("Visual effects parameter name and color value cannot be null");
+            return;
+        }
+        
+        if (!isValidHexColor(colorValue)) {
+            logWarning("Invalid hex color format: " + colorValue);
+            return;
+        }
+        
+        int color = parseHexColor(colorValue);
+        
+        switch (parameterName.toLowerCase()) {
+            case "tintcolor":
+                visualEffectsConfig.tintColor = color;
+                break;
+            case "particlecolor":
+                visualEffectsConfig.particleColor = color;
+                break;
+            case "glowcolor":
+                visualEffectsConfig.glowColor = color;
+                break;
+            case "shadowcolor":
+                visualEffectsConfig.shadowColor = color;
+                break;
+            case "outlinecolor":
+                visualEffectsConfig.outlineColor = color;
+                break;
+            default:
+                logWarning("Unknown color visual effects parameter: " + parameterName);
+                break;
+        }
+    }
+    
+    /**
+     * Toggle a visual effect on or off.
+     * 
+     * @param effectName The name of the effect to toggle
+     */
+    public void toggleVisualEffect(String effectName) {
+        if (effectName == null) {
+            logWarning("Effect name cannot be null");
+            return;
+        }
+        
+        switch (effectName.toLowerCase()) {
+            case "blur":
+                visualEffectsConfig.enableBlur = !visualEffectsConfig.enableBlur;
+                break;
+            case "motionblur":
+                visualEffectsConfig.enableMotionBlur = !visualEffectsConfig.enableMotionBlur;
+                break;
+            case "selectiveblur":
+                visualEffectsConfig.enableSelectiveBlur = !visualEffectsConfig.enableSelectiveBlur;
+                break;
+            case "particles":
+                visualEffectsConfig.enableParticles = !visualEffectsConfig.enableParticles;
+                break;
+            case "glow":
+                visualEffectsConfig.enableGlow = !visualEffectsConfig.enableGlow;
+                break;
+            case "shadow":
+                visualEffectsConfig.enableShadow = !visualEffectsConfig.enableShadow;
+                break;
+            case "outline":
+                visualEffectsConfig.enableOutline = !visualEffectsConfig.enableOutline;
+                break;
+            default:
+                logWarning("Unknown visual effect: " + effectName);
+                break;
+        }
+    }
+    
+    /**
+     * Reset all visual effects to their default values.
+     */
+    public void resetVisualEffects() {
+        this.visualEffectsConfig = new VisualEffectsConfig();
+    }
+    
+    /**
+     * Get the current intensity/quality level for visual effects.
+     * This can be used to adjust effect quality based on performance.
+     * 
+     * @return A value between 0.0 (lowest quality) and 1.0 (highest quality)
+     */
+    public float getVisualEffectsQuality() {
+        // Calculate quality based on enabled effects and their intensity
+        float quality = 1.0f;
+        
+        if (visualEffectsConfig.enableBlur) {
+            quality *= Math.max(0.5f, 1.0f - (visualEffectsConfig.blurRadius / 50.0f));
+        }
+        
+        if (visualEffectsConfig.enableParticles) {
+            quality *= Math.max(0.3f, 1.0f - (visualEffectsConfig.particleCount / 1000.0f));
+        }
+        
+        return Math.max(0.1f, Math.min(1.0f, quality));
+    }
+    
+    /**
+     * Adjust visual effects quality for performance optimization.
+     * 
+     * @param targetQuality The target quality level (0.0 to 1.0)
+     */
+    public void adjustVisualEffectsQuality(float targetQuality) {
+        targetQuality = Math.max(0.0f, Math.min(1.0f, targetQuality));
+        
+        if (targetQuality < 0.3f) {
+            // Low quality: disable expensive effects
+            visualEffectsConfig.enableBlur = false;
+            visualEffectsConfig.enableParticles = false;
+            visualEffectsConfig.particleCount = Math.min(visualEffectsConfig.particleCount, 20);
+        } else if (targetQuality < 0.7f) {
+            // Medium quality: reduce effect intensity
+            visualEffectsConfig.blurRadius = Math.min(visualEffectsConfig.blurRadius, 5.0f);
+            visualEffectsConfig.particleCount = Math.min(visualEffectsConfig.particleCount, 100);
+        }
+        // High quality: keep all effects enabled
     }
 }
