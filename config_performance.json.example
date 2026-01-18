@@ -1,0 +1,63 @@
+{
+  "_comment": "Performance Configuration - Optimized for smooth operation",
+  "_description": "Balanced settings for reliable performance on most hardware",
+  
+  "build": {
+    "imagesPerWord": 4,
+    "unsplashPropertiesFile": "~/.icandy/unsplash.properties",
+    "imageStorageDir": "data/images",
+    "associationsFile": "data/associations.json",
+    "stopWordsFile": "data/stopwords.txt",
+    "maxRetries": 3
+  },
+  
+  "run": {
+    "beatSensitivity": 120,
+    "minPhraseDuration": 2500,
+    "maxPhraseDuration": 9000,
+    "msPerWord": 350,
+    "frameRate": 30,
+    "textSize": 44,
+    "textColor": "#FFFFFF",
+    "backgroundColor": "#000000",
+    "enableKeyboardNavigation": true,
+    "simultaneousImageCount": 3,
+    "loopPhrases": true,
+    "audioSource": "microphone",
+    "showSettingsOverlay": true,
+    "settingsOverlayDuration": 2500
+  },
+  
+  "layout": {
+    "algorithm": "grid",
+    "displayRegion": {"x": 0, "y": 0, "width": 1920, "height": 1080},
+    "globalScale": 1.0,
+    "aspectRatioMode": "preserve",
+    "grid": {
+      "spacing": 25,
+      "padding": 40,
+      "alignment": "center"
+    }
+  },
+  
+  "transitions": {
+    "effect": "slide",
+    "duration": 600,
+    "easingFunction": "ease-out",
+    "staggerDelay": 80,
+    "enableStagger": true,
+    "slideDirection": "up"
+  },
+  
+  "visualEffects": {
+    "enableBlur": false,
+    "colorFilter": "none",
+    "brightness": 0.0,
+    "contrast": 0.1,
+    "gamma": 1.0,
+    "enableParticles": false,
+    "enableGlow": false,
+    "enableShadow": true,
+    "shadowOffset": 3
+  }
+}

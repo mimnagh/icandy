@@ -1,0 +1,70 @@
+{
+  "build": {
+    "imagesPerWord": 3,
+    "unsplashPropertiesFile": "unsplash.properties",
+    "imageStorageDir": "data/images",
+    "associationsFile": "data/associations.json",
+    "stopWordsFile": "data/stopwords.txt",
+    "maxRetries": 3
+  },
+  "run": {
+    "beatSensitivity": 100,
+    "minPhraseDuration": 2000,
+    "maxPhraseDuration": 10000,
+    "msPerWord": 300,
+    "frameRate": 30,
+    "textSize": 48,
+    "textColor": "#FFFFFF",
+    "backgroundColor": "#000000",
+    "enableKeyboardNavigation": true,
+    "simultaneousImageCount": 5,
+    "loopPhrases": true,
+    "audioSource": "microphone",
+    "showSettingsOverlay": true,
+    "settingsOverlayDuration": 4000
+  },
+  "layout": {
+    "algorithm": "flowing",
+    "displayRegion": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1280
+    },
+    "globalScale": 1.5,
+    "aspectRatioMode": "preserve",
+    "flowing": {
+      "pathCurvature": 1.0,
+      "flowDirection": "diagonal",
+      "pathSpacing": 150
+    }
+  },
+  "transitions": {
+    "effect": "morph",
+    "duration": 2000,
+    "easingFunction": "ease-in-out",
+    "staggerDelay": 200,
+    "enableStagger": true,
+    "blendMode": "overlay"
+  },
+  "visualEffects": {
+    "enableBlur": true,
+    "blurRadius": 5.0,
+    "colorFilter": "vintage",
+    "colorIntensity": 1.5,
+    "tintColor": "#FF6B35",
+    "brightness": 0.3,
+    "contrast": 0.4,
+    "gamma": 1.2,
+    "enableParticles": true,
+    "particleCount": 150,
+    "particleType": "fire",
+    "particleColor": "#FF4500",
+    "particleLifetime": 4000,
+    "enableGlow": true,
+    "glowRadius": 25,
+    "glowColor": "#FF6B35",
+    "enableShadow": true,
+    "shadowOffset": 10
+  }
+}

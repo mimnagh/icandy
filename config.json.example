@@ -1,25 +1,254 @@
 {
-  "_comment": "Copy this file to ~/.icandy/config.json and customize as needed",
+  "_comment": "Enhanced iCandy Configuration File",
+  "_description": "Copy this file to ~/.icandy/config.json and customize as needed",
+  "_version": "2.0",
+  
   "build": {
+    "_comment": "Build phase configuration - controls image downloading and association creation",
     "imagesPerWord": 5,
+    "_imagesPerWord_description": "Number of images to download per content word (1-10 recommended)",
+    
     "unsplashPropertiesFile": "~/.icandy/unsplash.properties",
+    "_unsplashPropertiesFile_description": "Path to Unsplash API credentials file",
+    
     "imageStorageDir": "data/images",
+    "_imageStorageDir_description": "Directory to store downloaded images",
+    
     "associationsFile": "data/associations.json",
+    "_associationsFile_description": "File to store word-to-image associations",
+    
     "stopWordsFile": "data/stopwords.txt",
-    "maxRetries": 3
+    "_stopWordsFile_description": "File containing stop words to exclude from image lookup",
+    
+    "maxRetries": 3,
+    "_maxRetries_description": "Maximum retry attempts for failed downloads (1-10)"
   },
+  
   "run": {
+    "_comment": "Run phase configuration - controls visual display and interaction",
+    
     "beatSensitivity": 100,
+    "_beatSensitivity_description": "Beat detection sensitivity in milliseconds (50-500)",
+    
     "minPhraseDuration": 2000,
+    "_minPhraseDuration_description": "Minimum phrase display time in milliseconds",
+    
     "maxPhraseDuration": 10000,
+    "_maxPhraseDuration_description": "Maximum phrase display time in milliseconds",
+    
     "msPerWord": 300,
+    "_msPerWord_description": "Reading time per word in milliseconds (200-500)",
+    
     "frameRate": 30,
+    "_frameRate_description": "Target frame rate for smooth animation (15-60)",
+    
     "textSize": 48,
+    "_textSize_description": "Font size for phrase display (24-72)",
+    
     "textColor": "#FFFFFF",
+    "_textColor_description": "Text color in hex format",
+    
     "backgroundColor": "#000000",
+    "_backgroundColor_description": "Background color in hex format",
+    
     "enableKeyboardNavigation": true,
+    "_enableKeyboardNavigation_description": "Enable interactive keyboard controls",
+    
     "simultaneousImageCount": 3,
+    "_simultaneousImageCount_description": "Number of images to display simultaneously (1-8)",
+    
     "loopPhrases": true,
-    "audioSource": "microphone"
+    "_loopPhrases_description": "Loop back to first phrase after reaching the end",
+    
+    "audioSource": "microphone",
+    "_audioSource_description": "Audio input source: 'microphone' or 'none'",
+    
+    "showSettingsOverlay": true,
+    "_showSettingsOverlay_description": "Show settings overlay when Tab is pressed",
+    
+    "settingsOverlayDuration": 3000,
+    "_settingsOverlayDuration_description": "Settings overlay display duration in milliseconds"
+  },
+  
+  "layout": {
+    "_comment": "Layout configuration - controls image positioning algorithms",
+    
+    "algorithm": "grid",
+    "_algorithm_description": "Layout algorithm: 'grid', 'collage', 'circular', 'flowing'",
+    
+    "displayRegion": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1280,
+      "_description": "Screen region where images can be displayed"
+    },
+    
+    "globalScale": 1.0,
+    "_globalScale_description": "Global scaling factor for all images (0.1-3.0)",
+    
+    "aspectRatioMode": "preserve",
+    "_aspectRatioMode_description": "How to handle aspect ratios: 'preserve', 'stretch', 'crop'",
+    
+    "grid": {
+      "_comment": "Grid layout specific parameters",
+      "spacing": 20,
+      "_spacing_description": "Space between images in pixels (0-100)",
+      
+      "padding": 40,
+      "_padding_description": "Padding around the grid in pixels (0-200)",
+      
+      "alignment": "center",
+      "_alignment_description": "Grid alignment: 'center', 'left', 'right', 'top', 'bottom'"
+    },
+    
+    "collage": {
+      "_comment": "Collage layout specific parameters",
+      "minSize": 0.3,
+      "_minSize_description": "Minimum image size as fraction of original (0.1-1.0)",
+      
+      "maxSize": 0.8,
+      "_maxSize_description": "Maximum image size as fraction of original (0.1-2.0)",
+      
+      "minRotation": -15,
+      "_minRotation_description": "Minimum rotation angle in degrees (-180 to 180)",
+      
+      "maxRotation": 15,
+      "_maxRotation_description": "Maximum rotation angle in degrees (-180 to 180)",
+      
+      "overlapAmount": 0.1,
+      "_overlapAmount_description": "Amount of overlap allowed (0.0-0.5)"
+    },
+    
+    "circular": {
+      "_comment": "Circular layout specific parameters",
+      "radius": 300,
+      "_radius_description": "Circle radius in pixels (100-800)",
+      
+      "arcSpan": 360,
+      "_arcSpan_description": "Arc span in degrees (90-360)",
+      
+      "rotationDirection": "clockwise",
+      "_rotationDirection_description": "Rotation direction: 'clockwise' or 'counterclockwise'"
+    },
+    
+    "flowing": {
+      "_comment": "Flowing layout specific parameters",
+      "pathCurvature": 0.5,
+      "_pathCurvature_description": "Path curvature amount (0.0-2.0)",
+      
+      "flowDirection": "horizontal",
+      "_flowDirection_description": "Flow direction: 'horizontal', 'vertical', 'diagonal'",
+      
+      "pathSpacing": 100,
+      "_pathSpacing_description": "Spacing along the path in pixels (50-300)"
+    }
+  },
+  
+  "transitions": {
+    "_comment": "Transition effects configuration - controls image swap animations",
+    
+    "effect": "fade",
+    "_effect_description": "Transition effect: 'fade', 'slide', 'zoom', 'rotate', 'morph'",
+    
+    "duration": 800,
+    "_duration_description": "Transition duration in milliseconds (100-5000)",
+    
+    "easingFunction": "ease-out",
+    "_easingFunction_description": "Easing function: 'linear', 'ease-in', 'ease-out', 'ease-in-out'",
+    
+    "staggerDelay": 100,
+    "_staggerDelay_description": "Delay between multiple image transitions in milliseconds (0-1000)",
+    
+    "enableStagger": true,
+    "_enableStagger_description": "Enable staggered timing for multiple simultaneous transitions",
+    
+    "slideDirection": "up",
+    "_slideDirection_description": "Slide direction: 'up', 'down', 'left', 'right', 'diagonal'",
+    
+    "zoomMode": "in",
+    "_zoomMode_description": "Zoom mode: 'in' (scale from 0 to 1) or 'out' (scale from 1 to 0)",
+    
+    "rotationAngle": 45,
+    "_rotationAngle_description": "Rotation angle in degrees (0-360)",
+    
+    "blendMode": "normal",
+    "_blendMode_description": "Blend mode for morph transitions: 'normal', 'multiply', 'screen', 'overlay'"
+  },
+  
+  "visualEffects": {
+    "_comment": "Visual effects configuration - controls image enhancements",
+    
+    "enableBlur": false,
+    "_enableBlur_description": "Enable blur effects",
+    "blurRadius": 2.0,
+    "_blurRadius_description": "Blur radius in pixels (0.5-10.0)",
+    
+    "colorFilter": "none",
+    "_colorFilter_description": "Color filter: 'none', 'sepia', 'grayscale', 'vintage'",
+    "colorIntensity": 1.0,
+    "_colorIntensity_description": "Color filter intensity (0.0-2.0)",
+    "tintColor": "#FFFFFF",
+    "_tintColor_description": "Tint color in hex format",
+    
+    "brightness": 0.0,
+    "_brightness_description": "Brightness adjustment (-1.0 to 1.0)",
+    "contrast": 0.0,
+    "_contrast_description": "Contrast adjustment (-1.0 to 1.0)",
+    "gamma": 1.0,
+    "_gamma_description": "Gamma correction (0.1-3.0)",
+    
+    "enableParticles": false,
+    "_enableParticles_description": "Enable particle systems",
+    "particleCount": 50,
+    "_particleCount_description": "Number of particles (10-200)",
+    "particleType": "sparkles",
+    "_particleType_description": "Particle type: 'sparkles', 'smoke', 'fire', 'snow'",
+    "particleColor": "#FFD700",
+    "_particleColor_description": "Particle color in hex format",
+    "particleLifetime": 2000,
+    "_particleLifetime_description": "Particle lifetime in milliseconds (500-5000)",
+    
+    "enableGlow": false,
+    "_enableGlow_description": "Enable glow effect around images",
+    "glowRadius": 10,
+    "_glowRadius_description": "Glow radius in pixels (2-50)",
+    "glowColor": "#FFFFFF",
+    "_glowColor_description": "Glow color in hex format",
+    
+    "enableShadow": false,
+    "_enableShadow_description": "Enable drop shadow effect",
+    "shadowOffset": 5,
+    "_shadowOffset_description": "Shadow offset in pixels (1-20)"
+  },
+  
+  "keyboard": {
+    "_comment": "Keyboard control mappings - customize interactive controls",
+    
+    "layoutKeys": {
+      "1": "grid",
+      "2": "collage", 
+      "3": "circular",
+      "4": "flowing",
+      "_description": "Number keys (1-4) switch layout algorithms"
+    },
+    
+    "transitionKeys": {
+      "q": "fade",
+      "w": "slide",
+      "e": "zoom", 
+      "r": "rotate",
+      "t": "morph",
+      "_description": "Letter keys (Q-W-E-R-T) switch transition effects"
+    },
+    
+    "effectKeys": {
+      "F1": "blur",
+      "F2": "sepia",
+      "F3": "particles",
+      "F4": "glow",
+      "F5": "reset",
+      "_description": "Function keys (F1-F5) toggle visual effects"
+    }
   }
 }

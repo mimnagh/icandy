@@ -1,0 +1,58 @@
+{
+  "build": {
+    "imagesPerWord": 3,
+    "unsplashPropertiesFile": "unsplash.properties",
+    "imageStorageDir": "data/images",
+    "associationsFile": "data/associations.json",
+    "stopWordsFile": "data/stopwords.txt",
+    "maxRetries": 3
+  },
+  "run": {
+    "beatSensitivity": 100,
+    "minPhraseDuration": 1500,
+    "maxPhraseDuration": 8000,
+    "msPerWord": 250,
+    "frameRate": 60,
+    "textSize": 48,
+    "textColor": "#FFFFFF",
+    "backgroundColor": "#000000",
+    "enableKeyboardNavigation": true,
+    "simultaneousImageCount": 2,
+    "loopPhrases": true,
+    "audioSource": "microphone",
+    "showSettingsOverlay": true,
+    "settingsOverlayDuration": 2000
+  },
+  "layout": {
+    "algorithm": "grid",
+    "displayRegion": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1280
+    },
+    "globalScale": 0.8,
+    "aspectRatioMode": "preserve",
+    "grid": {
+      "spacing": 10,
+      "padding": 20,
+      "alignment": "center"
+    }
+  },
+  "transitions": {
+    "effect": "fade",
+    "duration": 400,
+    "easingFunction": "linear",
+    "staggerDelay": 50,
+    "enableStagger": false
+  },
+  "visualEffects": {
+    "enableBlur": false,
+    "enableParticles": false,
+    "enableGlow": false,
+    "enableShadow": false,
+    "colorFilter": "none",
+    "brightness": 0.0,
+    "contrast": 0.0
+  }
+}

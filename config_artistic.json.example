@@ -1,0 +1,75 @@
+{
+  "_comment": "Artistic Configuration - Maximum visual impact and creativity",
+  "_description": "Designed for artistic presentations and visual experimentation",
+  
+  "build": {
+    "imagesPerWord": 8,
+    "unsplashPropertiesFile": "~/.icandy/unsplash.properties",
+    "imageStorageDir": "data/images",
+    "associationsFile": "data/associations.json",
+    "stopWordsFile": "data/stopwords.txt",
+    "maxRetries": 5
+  },
+  
+  "run": {
+    "beatSensitivity": 80,
+    "minPhraseDuration": 4000,
+    "maxPhraseDuration": 12000,
+    "msPerWord": 250,
+    "frameRate": 60,
+    "textSize": 56,
+    "textColor": "#F0F0F0",
+    "backgroundColor": "#1A1A1A",
+    "enableKeyboardNavigation": true,
+    "simultaneousImageCount": 5,
+    "loopPhrases": true,
+    "audioSource": "microphone",
+    "showSettingsOverlay": true,
+    "settingsOverlayDuration": 4000
+  },
+  
+  "layout": {
+    "algorithm": "collage",
+    "displayRegion": {"x": 0, "y": 0, "width": 1920, "height": 1080},
+    "globalScale": 1.2,
+    "aspectRatioMode": "preserve",
+    "collage": {
+      "minSize": 0.2,
+      "maxSize": 1.0,
+      "minRotation": -25,
+      "maxRotation": 25,
+      "overlapAmount": 0.15
+    }
+  },
+  
+  "transitions": {
+    "effect": "morph",
+    "duration": 1200,
+    "easingFunction": "ease-in-out",
+    "staggerDelay": 150,
+    "enableStagger": true,
+    "rotationAngle": 90,
+    "blendMode": "overlay"
+  },
+  
+  "visualEffects": {
+    "enableBlur": true,
+    "blurRadius": 3.0,
+    "colorFilter": "vintage",
+    "colorIntensity": 0.7,
+    "tintColor": "#FFE4B5",
+    "brightness": 0.1,
+    "contrast": 0.2,
+    "gamma": 1.1,
+    "enableParticles": true,
+    "particleCount": 75,
+    "particleType": "sparkles",
+    "particleColor": "#FFD700",
+    "particleLifetime": 3000,
+    "enableGlow": true,
+    "glowRadius": 15,
+    "glowColor": "#FFAA00",
+    "enableShadow": true,
+    "shadowOffset": 8
+  }
+}

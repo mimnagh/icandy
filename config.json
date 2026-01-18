@@ -1,0 +1,90 @@
+{
+  "build": {
+    "imagesPerWord": 3,
+    "unsplashPropertiesFile": "unsplash.properties",
+    "imageStorageDir": "data/images",
+    "associationsFile": "data/associations.json",
+    "stopWordsFile": "data/stopwords.txt",
+    "maxRetries": 3
+  },
+  "run": {
+    "beatSensitivity": 100,
+    "minPhraseDuration": 2000,
+    "maxPhraseDuration": 10000,
+    "msPerWord": 300,
+    "frameRate": 30,
+    "textSize": 48,
+    "textColor": "#FFFFFF",
+    "backgroundColor": "#000000",
+    "enableKeyboardNavigation": true,
+    "simultaneousImageCount": 3,
+    "loopPhrases": true,
+    "audioSource": "microphone",
+    "showSettingsOverlay": true,
+    "settingsOverlayDuration": 3000
+  },
+  "layout": {
+    "algorithm": "grid",
+    "displayRegion": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1280
+    },
+    "globalScale": 1.0,
+    "aspectRatioMode": "preserve",
+    "grid": {
+      "spacing": 20,
+      "padding": 40,
+      "alignment": "center"
+    },
+    "collage": {
+      "minSize": 0.3,
+      "maxSize": 0.8,
+      "minRotation": -15,
+      "maxRotation": 15,
+      "overlapAmount": 0.1
+    },
+    "circular": {
+      "radius": 300,
+      "arcSpan": 360,
+      "rotationDirection": "clockwise"
+    },
+    "flowing": {
+      "pathCurvature": 0.5,
+      "flowDirection": "horizontal",
+      "pathSpacing": 100
+    }
+  },
+  "transitions": {
+    "effect": "fade",
+    "duration": 800,
+    "easingFunction": "ease-out",
+    "staggerDelay": 100,
+    "enableStagger": true,
+    "slideDirection": "up",
+    "zoomMode": "in",
+    "rotationAngle": 45,
+    "blendMode": "normal"
+  },
+  "visualEffects": {
+    "enableBlur": false,
+    "blurRadius": 2.0,
+    "colorFilter": "none",
+    "colorIntensity": 1.0,
+    "tintColor": "#FFFFFF",
+    "brightness": 0.0,
+    "contrast": 0.0,
+    "gamma": 1.0,
+    "enableParticles": false,
+    "particleCount": 50,
+    "particleType": "sparkles",
+    "particleColor": "#FFD700",
+    "particleLifetime": 2000,
+    "enableGlow": false,
+    "glowRadius": 10,
+    "glowColor": "#FFFFFF",
+    "enableShadow": false,
+    "shadowOffset": 5
+  }
+}

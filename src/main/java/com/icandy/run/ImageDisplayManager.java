@@ -592,32 +592,68 @@ public class ImageDisplayManager {
             return;
         }
         
+        // Get all words with images from current phrase
+        List<String> wordsWithImages = new ArrayList<>(wordToImagePaths.keySet());
+        
+        if (wordsWithImages.isEmpty()) {
+            return;
+        }
+        
         // Collect new images for swapping
         List<PImage> newImages = new ArrayList<>();
         List<String> newWords = new ArrayList<>();
         
-        for (DisplaySlot slot : displaySlots) {
-            String word = slot.word;
-            List<PImage> images = imageCache.get(word);
+        for (int slotIndex = 0; slotIndex < displaySlots.size(); slotIndex++) {
+            DisplaySlot slot = displaySlots.get(slotIndex);
+            String currentWord = slot.word;
             
-            if (images == null || images.isEmpty()) {
-                newImages.add(slot.image); // Keep current image
-                newWords.add(word);
-                continue;
+            // Try to get next image for current word first
+            List<PImage> currentWordImages = imageCache.get(currentWord);
+            boolean swappedWithinWord = false;
+            
+            if (currentWordImages != null && currentWordImages.size() > 1) {
+                // Advance to next image for same word
+                int currentIndex = currentImageIndices.getOrDefault(currentWord, 0);
+                int nextIndex = (currentIndex + 1) % currentWordImages.size();
+                currentImageIndices.put(currentWord, nextIndex);
+                
+                newImages.add(currentWordImages.get(nextIndex));
+                newWords.add(currentWord);
+                swappedWithinWord = true;
             }
             
-            // Only swap if there are multiple images for this word
-            if (images.size() > 1) {
-                // Advance to next image
-                int currentIndex = currentImageIndices.getOrDefault(word, 0);
-                int nextIndex = (currentIndex + 1) % images.size();
-                currentImageIndices.put(word, nextIndex);
+            // If we couldn't swap within the word, try to swap to a different word
+            if (!swappedWithinWord && wordsWithImages.size() > displaySlots.size()) {
+                // Find a different word that's not currently displayed
+                List<String> availableWords = new ArrayList<>(wordsWithImages);
                 
-                newImages.add(images.get(nextIndex));
-                newWords.add(word);
-            } else {
-                newImages.add(slot.image); // Keep current image
-                newWords.add(word);
+                // Remove currently displayed words
+                for (DisplaySlot otherSlot : displaySlots) {
+                    availableWords.remove(otherSlot.word);
+                }
+                
+                if (!availableWords.isEmpty()) {
+                    // Pick a random available word
+                    String newWord = availableWords.get((int) (Math.random() * availableWords.size()));
+                    PImage newImage = getCurrentImageForWord(newWord);
+                    
+                    if (newImage != null) {
+                        newImages.add(newImage);
+                        newWords.add(newWord);
+                    } else {
+                        // Fallback: keep current image
+                        newImages.add(slot.image);
+                        newWords.add(currentWord);
+                    }
+                } else {
+                    // Fallback: keep current image
+                    newImages.add(slot.image);
+                    newWords.add(currentWord);
+                }
+            } else if (!swappedWithinWord) {
+                // No other options, keep current image
+                newImages.add(slot.image);
+                newWords.add(currentWord);
             }
         }
         
