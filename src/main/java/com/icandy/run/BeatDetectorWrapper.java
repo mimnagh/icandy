@@ -1,10 +1,10 @@
 package com.icandy.run;
 
+import com.icandy.common.Logger;
 import processing.core.PApplet;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.logging.Logger;
 
 /**
  * BeatDetectorWrapper wraps Processing's BeatDetector for easier integration.
@@ -24,7 +24,7 @@ import java.util.logging.Logger;
  */
 public class BeatDetectorWrapper {
     
-    private static final Logger LOGGER = Logger.getLogger(BeatDetectorWrapper.class.getName());
+    private static final Logger LOGGER = new Logger(BeatDetectorWrapper.class);
     private static final int DEFAULT_SENSITIVITY_MS = 100;
     private static final String AUDIO_IN_CLASS = "processing.sound.AudioIn";
     private static final String BEAT_DETECTOR_CLASS = "processing.sound.BeatDetector";
@@ -50,11 +50,17 @@ public class BeatDetectorWrapper {
      * @param parent The parent PApplet (Processing sketch)
      */
     public BeatDetectorWrapper(PApplet parent) {
+        if (parent == null) {
+            throw new IllegalArgumentException("Parent PApplet cannot be null");
+        }
+        
         this.parent = parent;
         this.initialized = false;
         this.audioAvailable = false;
         this.sensitivityMs = DEFAULT_SENSITIVITY_MS;
         this.lastBeatTime = 0;
+        
+        LOGGER.info("BeatDetectorWrapper created");
     }
     
     /**
@@ -69,11 +75,15 @@ public class BeatDetectorWrapper {
      * Requirements: 5.1, 5.2, 8.2, 8.3
      */
     public void setup() {
+        LOGGER.info("Setting up beat detection");
+        
         try {
             // Try to load Processing Sound library classes using reflection
             Class<?> audioInClass = Class.forName(AUDIO_IN_CLASS);
             Class<?> beatDetectorClass = Class.forName(BEAT_DETECTOR_CLASS);
             Class<?> soundObjectClass = Class.forName("processing.sound.SoundObject");
+            
+            LOGGER.info("Processing Sound library classes loaded successfully");
             
             // Get constructors
             Constructor<?> audioInConstructor = audioInClass.getConstructor(PApplet.class, int.class);
@@ -87,12 +97,17 @@ public class BeatDetectorWrapper {
             beatDetectorSensitivityMethod = beatDetectorClass.getMethod("sensitivity", int.class);
             beatDetectorIsBeatMethod = beatDetectorClass.getMethod("isBeat");
             
+            LOGGER.info("Processing Sound library methods resolved successfully");
+            
             // Create instances
             audioInput = audioInConstructor.newInstance(parent, 0);
             beatDetector = beatDetectorConstructor.newInstance(parent);
             
+            LOGGER.info("Audio input and beat detector instances created");
+            
             // Start audio input
             audioInStartMethod.invoke(audioInput);
+            LOGGER.info("Audio input started successfully");
             
             // Configure beat detector
             beatDetectorInputMethod.invoke(beatDetector, audioInput);
@@ -108,16 +123,32 @@ public class BeatDetectorWrapper {
             audioAvailable = false;
             initialized = true;
             
-            LOGGER.warning("Processing Sound library not found. Beat detection will not be available.");
-            LOGGER.warning("To enable beat detection, install the Sound library in Processing IDE.");
+            LOGGER.warning("Processing Sound library not found - beat detection disabled");
+            LOGGER.info("To enable beat detection, install the Sound library in Processing IDE");
+            
+        } catch (NoSuchMethodException e) {
+            // Method signature mismatch - library version issue
+            audioAvailable = false;
+            initialized = true;
+            
+            LOGGER.warning("Processing Sound library method not found - version mismatch", e.getMessage());
+            LOGGER.info("Beat detection disabled due to library compatibility issue");
+            
+        } catch (SecurityException e) {
+            // Security manager preventing reflection
+            audioAvailable = false;
+            initialized = true;
+            
+            LOGGER.warning("Security restriction prevented audio initialization", e.getMessage());
+            LOGGER.info("Beat detection disabled due to security restrictions");
             
         } catch (Exception e) {
             // Audio input failed - fall back to non-audio mode
             audioAvailable = false;
             initialized = true;
             
-            LOGGER.warning("Failed to initialize audio input: " + e.getMessage());
-            LOGGER.warning("Beat detection will not be available. Continuing without audio.");
+            LOGGER.warning("Failed to initialize audio input - beat detection disabled", e.getMessage());
+            LOGGER.info("This may be due to microphone permissions or hardware issues");
         }
     }
     

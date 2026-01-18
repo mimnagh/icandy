@@ -1,6 +1,7 @@
 package com.icandy.run;
 
 import com.icandy.common.ConfigurationManager;
+import com.icandy.common.Logger;
 import processing.core.PApplet;
 import processing.core.PConstants;
 
@@ -16,6 +17,8 @@ import processing.core.PConstants;
  * Requirements: 4.2, 4.6
  */
 public class TextDisplayManager {
+    
+    private static final Logger LOGGER = new Logger(TextDisplayManager.class);
     
     // Constants
     private static final float TEXT_WIDTH_RATIO = 0.9f; // Use 90% of screen width for text
@@ -35,6 +38,13 @@ public class TextDisplayManager {
      * @param config Configuration manager for display settings
      */
     public TextDisplayManager(PApplet parent, ConfigurationManager config) {
+        if (parent == null) {
+            throw new IllegalArgumentException("Parent PApplet cannot be null");
+        }
+        if (config == null) {
+            throw new IllegalArgumentException("Configuration manager cannot be null");
+        }
+        
         this.parent = parent;
         this.config = config;
         this.currentPhrase = "";
@@ -43,6 +53,8 @@ public class TextDisplayManager {
         
         // Detect if we're in a test environment (PApplet not fully initialized)
         this.isTestMode = (parent.g == null);
+        
+        LOGGER.info("TextDisplayManager initialized");
     }
     
     /**
@@ -58,6 +70,7 @@ public class TextDisplayManager {
      */
     public void displayPhrase(String phrase, int x, int y) {
         if (phrase == null || phrase.isEmpty()) {
+            LOGGER.warning("Attempted to display null or empty phrase");
             return;
         }
         
@@ -67,25 +80,55 @@ public class TextDisplayManager {
         }
         
         try {
-            // Set text properties from configuration
-            parent.textSize(config.getTextSize());
+            // Validate coordinates
+            if (x < 0 || y < 0 || x > parent.width || y > parent.height) {
+                LOGGER.warning("Invalid display coordinates: (" + x + ", " + y + "), screen size: " + parent.width + "x" + parent.height);
+                // Clamp to valid range
+                x = Math.max(0, Math.min(x, parent.width));
+                y = Math.max(0, Math.min(y, parent.height));
+            }
+            
+            // Set text properties from configuration with error handling
+            try {
+                int textSize = config.getTextSize();
+                if (textSize <= 0) {
+                    LOGGER.warning("Invalid text size from config: " + textSize + ", using default");
+                    textSize = 24; // Default text size
+                }
+                parent.textSize(textSize);
+            } catch (Exception e) {
+                LOGGER.warning("Error setting text size: " + e.getMessage());
+                parent.textSize(24); // Fallback to default
+            }
+            
             parent.textAlign(PConstants.CENTER, PConstants.CENTER);
             
-            // Parse and apply text color
-            int textColor = parseHexColor(config.getTextColor());
-            parent.fill(textColor);
+            // Parse and apply text color with error handling
+            try {
+                String colorStr = config.getTextColor();
+                int textColor = parseHexColor(colorStr);
+                parent.fill(textColor);
+            } catch (Exception e) {
+                LOGGER.warning("Error setting text color: " + e.getMessage());
+                parent.fill(255, 255, 255); // Fallback to white
+            }
             
             // Wrap text if needed and draw
             String[] lines = wrapText(phrase, parent.width * TEXT_WIDTH_RATIO);
             drawMultilineText(lines, x, y);
+            
         } catch (RuntimeException e) {
-            // Only catch known initialization errors
+            // Handle known initialization errors
             if (e.getMessage() != null && e.getMessage().contains("textFont")) {
-                // Expected error when font not initialized - skip rendering
+                LOGGER.info("Text font not initialized - skipping text rendering");
                 return;
             }
-            // Re-throw unexpected exceptions to avoid hiding bugs
-            throw e;
+            
+            // Log unexpected errors but don't crash
+            LOGGER.error("Unexpected error displaying phrase", e);
+        } catch (Exception e) {
+            // Catch any other exceptions to prevent crashes
+            LOGGER.error("Error displaying phrase: " + phrase, e);
         }
     }
     
@@ -98,12 +141,13 @@ public class TextDisplayManager {
      */
     private String[] wrapText(String text, float maxWidth) {
         if (text == null || text.isEmpty()) {
+            LOGGER.warning("Attempted to wrap null or empty text");
             return new String[0];
         }
         
         // Validate maxWidth
         if (maxWidth <= 0) {
-            // Invalid width - return single line
+            LOGGER.warning("Invalid max width for text wrapping: " + maxWidth + ", using single line");
             return new String[]{text};
         }
         
@@ -117,7 +161,7 @@ public class TextDisplayManager {
         try {
             textWidth = parent.textWidth(text);
         } catch (Exception e) {
-            // If we can't measure, return single line
+            LOGGER.warning("Cannot measure text width: " + e.getMessage() + ", using single line");
             return new String[]{text};
         }
         
@@ -128,10 +172,18 @@ public class TextDisplayManager {
         
         // Split into words and wrap
         String[] words = text.split("\\s+");
+        if (words.length == 0) {
+            return new String[]{text};
+        }
+        
         java.util.ArrayList<String> lines = new java.util.ArrayList<>();
         StringBuilder currentLine = new StringBuilder();
         
         for (String word : words) {
+            if (word == null || word.isEmpty()) {
+                continue; // Skip empty words
+            }
+            
             String testLine = currentLine.length() == 0 
                 ? word 
                 : currentLine + " " + word;
@@ -140,6 +192,7 @@ public class TextDisplayManager {
             try {
                 testWidth = parent.textWidth(testLine);
             } catch (Exception e) {
+                LOGGER.warning("Error measuring text width during wrapping: " + e.getMessage());
                 // If we can't measure, return what we have so far
                 if (currentLine.length() > 0) {
                     lines.add(currentLine.toString());
@@ -183,22 +236,29 @@ public class TextDisplayManager {
      */
     private void drawMultilineText(String[] lines, int x, int y) {
         if (lines == null || lines.length == 0) {
+            LOGGER.warning("Attempted to draw null or empty text lines");
             return;
         }
         
-        // Calculate line height (text size + spacing)
-        float lineHeight = config.getTextSize() * 1.2f; // 20% spacing between lines
-        
-        // Calculate total height of all lines
-        float totalHeight = lines.length * lineHeight;
-        
-        // Start y position (centered vertically around the given y)
-        float startY = y - (totalHeight / 2) + (lineHeight / 2);
-        
-        // Draw each line
-        for (int i = 0; i < lines.length; i++) {
-            float lineY = startY + (i * lineHeight);
-            parent.text(lines[i], x, lineY);
+        try {
+            // Calculate line height (text size + spacing)
+            float lineHeight = config.getTextSize() * 1.2f; // 20% spacing between lines
+            
+            // Calculate total height of all lines
+            float totalHeight = lines.length * lineHeight;
+            
+            // Start y position (centered vertically around the given y)
+            float startY = y - (totalHeight / 2) + (lineHeight / 2);
+            
+            // Draw each line
+            for (int i = 0; i < lines.length; i++) {
+                if (lines[i] != null && !lines[i].isEmpty()) {
+                    float lineY = startY + (i * lineHeight);
+                    parent.text(lines[i], x, lineY);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error drawing multiline text", e);
         }
     }
     
@@ -208,9 +268,16 @@ public class TextDisplayManager {
      * @param nextPhrase The next phrase to display
      */
     public void updatePhrase(String nextPhrase) {
+        if (nextPhrase == null) {
+            LOGGER.warning("Attempted to update to null phrase");
+            nextPhrase = "";
+        }
+        
         this.currentPhrase = nextPhrase;
         this.phraseStartTime = System.currentTimeMillis();
         this.currentDuration = calculateDisplayDuration(nextPhrase);
+        
+        LOGGER.info("Updated to new phrase", "length=" + nextPhrase.length() + ", duration=" + currentDuration + "ms");
     }
     
     /**
@@ -243,34 +310,52 @@ public class TextDisplayManager {
      */
     public int calculateDisplayDuration(String phrase) {
         if (phrase == null || phrase.isEmpty()) {
-            return config.getMinPhraseDuration();
+            try {
+                return config.getMinPhraseDuration();
+            } catch (Exception e) {
+                LOGGER.warning("Error getting min phrase duration from config: " + e.getMessage());
+                return 2000; // Default 2 seconds
+            }
         }
         
         // Count words in the phrase
         String trimmed = phrase.trim();
         if (trimmed.isEmpty()) {
-            return config.getMinPhraseDuration();
+            try {
+                return config.getMinPhraseDuration();
+            } catch (Exception e) {
+                LOGGER.warning("Error getting min phrase duration from config: " + e.getMessage());
+                return 2000; // Default 2 seconds
+            }
         }
         
         // Split by whitespace and count non-empty tokens
         String[] words = trimmed.split("\\s+");
         int wordCount = words.length;
         
-        // Apply formula: duration = (wordCount * msPerWord) + baseDuration
-        // Using minPhraseDuration as the base duration
-        int baseDuration = 1000; // 1 second base as per design
-        int calculatedDuration = (wordCount * config.getMsPerWord()) + baseDuration;
-        
-        // Bound by min and max
-        int minDuration = config.getMinPhraseDuration();
-        int maxDuration = config.getMaxPhraseDuration();
-        
-        if (calculatedDuration < minDuration) {
-            return minDuration;
-        } else if (calculatedDuration > maxDuration) {
-            return maxDuration;
-        } else {
-            return calculatedDuration;
+        try {
+            // Apply formula: duration = (wordCount * msPerWord) + baseDuration
+            // Using minPhraseDuration as the base duration
+            int baseDuration = 1000; // 1 second base as per design
+            int msPerWord = config.getMsPerWord();
+            int calculatedDuration = (wordCount * msPerWord) + baseDuration;
+            
+            // Bound by min and max
+            int minDuration = config.getMinPhraseDuration();
+            int maxDuration = config.getMaxPhraseDuration();
+            
+            if (calculatedDuration < minDuration) {
+                return minDuration;
+            } else if (calculatedDuration > maxDuration) {
+                return maxDuration;
+            } else {
+                return calculatedDuration;
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error calculating phrase duration", e);
+            // Fallback calculation
+            int fallbackDuration = Math.max(2000, wordCount * 300 + 1000);
+            return Math.min(fallbackDuration, 10000); // Cap at 10 seconds
         }
     }
     
@@ -307,6 +392,7 @@ public class TextDisplayManager {
      */
     private int parseHexColor(String hexColor) {
         if (hexColor == null || !hexColor.startsWith("#") || hexColor.length() != 7) {
+            LOGGER.warning("Invalid hex color format: " + hexColor + ", using white");
             return parent.color(255, 255, 255); // Default to white
         }
         
@@ -316,6 +402,10 @@ public class TextDisplayManager {
             int b = Integer.parseInt(hexColor.substring(5, 7), 16);
             return parent.color(r, g, b);
         } catch (NumberFormatException e) {
+            LOGGER.warning("Error parsing hex color: " + hexColor + ", using white", e.getMessage());
+            return parent.color(255, 255, 255); // Default to white on error
+        } catch (Exception e) {
+            LOGGER.error("Unexpected error parsing hex color: " + hexColor, e);
             return parent.color(255, 255, 255); // Default to white on error
         }
     }

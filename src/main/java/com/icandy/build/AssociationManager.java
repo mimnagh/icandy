@@ -2,7 +2,9 @@ package com.icandy.build;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
+import com.icandy.common.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,6 +19,7 @@ import java.util.*;
 public class AssociationManager {
     
     private Map<String, List<String>> associations;
+    private final Logger logger;
     private Gson gson;
     
     /**
@@ -24,7 +27,9 @@ public class AssociationManager {
      */
     public AssociationManager() {
         this.associations = new HashMap<>();
+        this.logger = new Logger(AssociationManager.class);
         this.gson = new GsonBuilder().setPrettyPrinting().create();
+        logger.info("AssociationManager initialized");
     }
     
     /**
@@ -36,31 +41,43 @@ public class AssociationManager {
      */
     public void addAssociation(String word, String[] imagePaths) {
         if (word == null || word.trim().isEmpty()) {
+            logger.warning("Empty or null word provided for association");
             return;
         }
         
         if (imagePaths == null || imagePaths.length == 0) {
+            logger.warning("Empty or null image paths provided for word", word);
             return;
         }
         
-        String normalizedWord = word.toLowerCase().trim();
-        
-        // Get existing list or create new one
-        List<String> imageList = associations.getOrDefault(normalizedWord, new ArrayList<>());
-        
-        // Track if we added any valid paths
-        int initialSize = imageList.size();
-        
-        // Add new image paths
-        for (String imagePath : imagePaths) {
-            if (imagePath != null && !imagePath.trim().isEmpty()) {
-                imageList.add(imagePath);
+        try {
+            String normalizedWord = word.toLowerCase().trim();
+            
+            // Get existing list or create new one
+            List<String> imageList = associations.getOrDefault(normalizedWord, new ArrayList<>());
+            
+            // Track if we added any valid paths
+            int initialSize = imageList.size();
+            
+            // Add new image paths
+            for (String imagePath : imagePaths) {
+                if (imagePath != null && !imagePath.trim().isEmpty()) {
+                    imageList.add(imagePath.trim());
+                }
             }
-        }
-        
-        // Only add to map if we actually added at least one valid image path
-        if (imageList.size() > initialSize) {
-            associations.put(normalizedWord, imageList);
+            
+            // Only add to map if we actually added at least one valid image path
+            if (imageList.size() > initialSize) {
+                associations.put(normalizedWord, imageList);
+                logger.info("Association added", 
+                    String.format("word=%s, newImages=%d, totalImages=%d", 
+                        normalizedWord, imageList.size() - initialSize, imageList.size()));
+            } else {
+                logger.warning("No valid image paths added for word", normalizedWord);
+            }
+            
+        } catch (Exception e) {
+            logger.error("Error adding association", word, e);
         }
     }
     
@@ -94,35 +111,67 @@ public class AssociationManager {
      */
     public void saveToFile(String filepath) throws IOException {
         if (filepath == null || filepath.trim().isEmpty()) {
-            throw new IllegalArgumentException("Filepath cannot be null or empty");
+            IllegalArgumentException e = new IllegalArgumentException("Filepath cannot be null or empty");
+            logger.error("Invalid filepath for save operation", "", e);
+            throw e;
         }
         
-        // Create the data structure to serialize
-        Map<String, Object> data = new HashMap<>();
-        data.put("associations", associations);
+        logger.info("Saving associations to file", filepath);
         
-        // Add metadata
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("created", Instant.now().toString());
-        metadata.put("wordCount", associations.size());
-        
-        int totalImages = associations.values().stream()
-            .mapToInt(List::size)
-            .sum();
-        metadata.put("imageCount", totalImages);
-        
-        data.put("metadata", metadata);
-        
-        // Serialize to JSON
-        String json = gson.toJson(data);
-        
-        // Write to file
-        Path path = Path.of(filepath);
-        Path parent = path.getParent();
-        if (parent != null) {
-            Files.createDirectories(parent);
+        try {
+            // Create the data structure to serialize
+            Map<String, Object> data = new HashMap<>();
+            data.put("associations", associations);
+            
+            // Add metadata
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("created", Instant.now().toString());
+            metadata.put("wordCount", associations.size());
+            
+            int totalImages = associations.values().stream()
+                .mapToInt(List::size)
+                .sum();
+            metadata.put("imageCount", totalImages);
+            
+            data.put("metadata", metadata);
+            
+            // Serialize to JSON
+            String json;
+            try {
+                json = gson.toJson(data);
+            } catch (Exception e) {
+                logger.error("Failed to serialize associations to JSON", filepath, e);
+                throw new IOException("Failed to serialize associations: " + e.getMessage(), e);
+            }
+            
+            // Write to file
+            Path path = Path.of(filepath);
+            Path parent = path.getParent();
+            if (parent != null) {
+                try {
+                    Files.createDirectories(parent);
+                } catch (IOException e) {
+                    logger.error("Failed to create parent directories", parent.toString(), e);
+                    throw new IOException("Failed to create parent directories: " + e.getMessage(), e);
+                }
+            }
+            
+            try {
+                Files.writeString(path, json);
+                logger.info("Associations saved successfully", 
+                    String.format("file=%s, words=%d, images=%d", filepath, associations.size(), totalImages));
+            } catch (IOException e) {
+                logger.error("Failed to write associations file", filepath, e);
+                throw new IOException("Failed to write associations file: " + e.getMessage(), e);
+            }
+            
+        } catch (IOException e) {
+            logger.error("Failed to save associations", filepath, e);
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error saving associations", filepath, e);
+            throw new IOException("Unexpected error saving associations: " + e.getMessage(), e);
         }
-        Files.writeString(path, json);
     }
     
     /**
@@ -134,31 +183,59 @@ public class AssociationManager {
      */
     public void loadFromFile(String filepath) throws IOException {
         if (filepath == null || filepath.trim().isEmpty()) {
-            throw new IllegalArgumentException("Filepath cannot be null or empty");
+            IllegalArgumentException e = new IllegalArgumentException("Filepath cannot be null or empty");
+            logger.error("Invalid filepath for load operation", "", e);
+            throw e;
         }
         
-        Path path = Path.of(filepath);
-        
-        if (!Files.exists(path)) {
-            throw new IOException("File does not exist: " + filepath);
-        }
+        logger.info("Loading associations from file", filepath);
         
         try {
+            Path path = Path.of(filepath);
+            
+            if (!Files.exists(path)) {
+                IOException e = new IOException("File does not exist: " + filepath);
+                logger.error("Associations file not found", filepath, e);
+                throw e;
+            }
+            
+            if (!Files.isReadable(path)) {
+                IOException e = new IOException("File is not readable: " + filepath);
+                logger.error("Associations file not readable", filepath, e);
+                throw e;
+            }
+            
             // Read JSON from file
-            String json = Files.readString(path);
+            String json;
+            try {
+                json = Files.readString(path);
+            } catch (IOException e) {
+                logger.error("Failed to read associations file", filepath, e);
+                throw new IOException("Failed to read associations file: " + e.getMessage(), e);
+            }
             
             // Deserialize directly to the expected structure
             TypeToken<Map<String, Object>> typeToken = new TypeToken<Map<String, Object>>() {};
-            Map<String, Object> data = gson.fromJson(json, typeToken.getType());
+            Map<String, Object> data;
+            try {
+                data = gson.fromJson(json, typeToken.getType());
+            } catch (JsonSyntaxException e) {
+                logger.error("Invalid JSON format in associations file", filepath, e);
+                throw new IOException("Invalid JSON format: " + e.getMessage(), e);
+            }
             
             if (data == null || !data.containsKey("associations")) {
-                throw new IOException("Invalid associations file format: missing 'associations' key");
+                IOException e = new IOException("Invalid associations file format: missing 'associations' key");
+                logger.error("Invalid associations file format", filepath, e);
+                throw e;
             }
             
             // Extract and validate associations
             Object associationsObj = data.get("associations");
             if (!(associationsObj instanceof Map)) {
-                throw new IOException("Invalid associations file format: 'associations' must be a map");
+                IOException e = new IOException("Invalid associations file format: 'associations' must be a map");
+                logger.error("Invalid associations data structure", filepath, e);
+                throw e;
             }
             
             // Cast to proper type - Gson ensures the structure matches
@@ -185,8 +262,20 @@ public class AssociationManager {
             }
             
             this.associations = loadedAssociations;
-        } catch (com.google.gson.JsonSyntaxException e) {
-            throw new IOException("Invalid JSON format: " + e.getMessage(), e);
+            
+            int totalImages = associations.values().stream()
+                .mapToInt(List::size)
+                .sum();
+                
+            logger.info("Associations loaded successfully", 
+                String.format("file=%s, words=%d, images=%d", filepath, associations.size(), totalImages));
+                
+        } catch (IOException e) {
+            logger.error("Failed to load associations", filepath, e);
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error loading associations", filepath, e);
+            throw new IOException("Unexpected error loading associations: " + e.getMessage(), e);
         }
     }
     
@@ -196,15 +285,28 @@ public class AssociationManager {
      * @return true if all image files exist, false if any are missing
      */
     public boolean verifyImageFiles() {
-        for (List<String> imagePaths : associations.values()) {
-            for (String imagePath : imagePaths) {
-                Path path = Path.of(imagePath);
-                if (!Files.exists(path)) {
-                    return false;
+        try {
+            for (Map.Entry<String, List<String>> entry : associations.entrySet()) {
+                String word = entry.getKey();
+                List<String> imagePaths = entry.getValue();
+                
+                for (String imagePath : imagePaths) {
+                    Path path = Path.of(imagePath);
+                    if (!Files.exists(path)) {
+                        logger.warning("Missing image file", 
+                            String.format("word=%s, file=%s", word, imagePath));
+                        return false;
+                    }
                 }
             }
+            
+            logger.info("All image files verified successfully");
+            return true;
+            
+        } catch (Exception e) {
+            logger.error("Error during image file verification", "", e);
+            return false;
         }
-        return true;
     }
     
     /**
@@ -216,13 +318,34 @@ public class AssociationManager {
     public List<String> getMissingImageFiles() {
         List<String> missingFiles = new ArrayList<>();
         
-        for (List<String> imagePaths : associations.values()) {
-            for (String imagePath : imagePaths) {
-                Path path = Path.of(imagePath);
-                if (!Files.exists(path)) {
-                    missingFiles.add(imagePath);
+        try {
+            for (Map.Entry<String, List<String>> entry : associations.entrySet()) {
+                String word = entry.getKey();
+                List<String> imagePaths = entry.getValue();
+                
+                for (String imagePath : imagePaths) {
+                    try {
+                        Path path = Path.of(imagePath);
+                        if (!Files.exists(path)) {
+                            missingFiles.add(imagePath);
+                            logger.warning("Missing image file detected", 
+                                String.format("word=%s, file=%s", word, imagePath));
+                        }
+                    } catch (Exception e) {
+                        logger.warning("Error checking image file", 
+                            String.format("word=%s, file=%s, error=%s", word, imagePath, e.getMessage()));
+                        missingFiles.add(imagePath);
+                    }
                 }
             }
+            
+            if (!missingFiles.isEmpty()) {
+                logger.warning("Missing image files found", 
+                    String.format("count=%d", missingFiles.size()));
+            }
+            
+        } catch (Exception e) {
+            logger.error("Error getting missing image files", "", e);
         }
         
         return missingFiles;

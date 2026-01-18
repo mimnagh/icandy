@@ -3,6 +3,8 @@ package com.icandy.build;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import com.icandy.common.Logger;
 import okhttp3.*;
 
 import java.io.FileOutputStream;
@@ -31,6 +33,7 @@ public class ImageDownloader {
     private static final long ONE_HOUR_MS = 60 * 60 * 1000; // 1 hour in milliseconds
     
     private final OkHttpClient httpClient;
+    private final Logger logger;
     private String accessKey;
     private int maxRetries;
     
@@ -47,10 +50,13 @@ public class ImageDownloader {
             .readTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .build();
+        this.logger = new Logger(ImageDownloader.class);
         this.maxRetries = 3;
         // Initialize rate limit window to 0 - will be set on first request
         this.rateLimitWindowStart = 0;
         this.requestCount = 0;
+        
+        logger.info("ImageDownloader initialized with default settings");
     }
     
     /**
@@ -60,10 +66,13 @@ public class ImageDownloader {
      */
     public ImageDownloader(OkHttpClient httpClient) {
         this.httpClient = httpClient;
+        this.logger = new Logger(ImageDownloader.class);
         this.maxRetries = 3;
         // Initialize rate limit window to 0 - will be set on first request
         this.rateLimitWindowStart = 0;
         this.requestCount = 0;
+        
+        logger.info("ImageDownloader initialized with custom HTTP client");
     }
     
     /**
@@ -72,7 +81,13 @@ public class ImageDownloader {
      * @param accessKey The Unsplash API access key
      */
     public void setApiKey(String accessKey) {
-        this.accessKey = accessKey;
+        if (accessKey == null || accessKey.trim().isEmpty()) {
+            logger.warning("Empty or null API key provided");
+            this.accessKey = null;
+        } else {
+            this.accessKey = accessKey.trim();
+            logger.info("API key set successfully");
+        }
     }
     
     /**
@@ -81,7 +96,13 @@ public class ImageDownloader {
      * @param maxRetries Maximum retry count
      */
     public void setMaxRetries(int maxRetries) {
-        this.maxRetries = maxRetries;
+        if (maxRetries < 0) {
+            logger.warning("Invalid maxRetries value, using 0", String.format("value=%d", maxRetries));
+            this.maxRetries = 0;
+        } else {
+            this.maxRetries = maxRetries;
+            logger.info("Max retries set", String.format("maxRetries=%d", maxRetries));
+        }
     }
     
     /**
@@ -92,23 +113,50 @@ public class ImageDownloader {
      * @throws IOException if the file cannot be read
      */
     public void loadCredentials(String propertiesFilePath) throws IOException {
-        // Expand ~ to user home directory
-        String expandedPath = propertiesFilePath.replaceFirst("^~", System.getProperty("user.home"));
-        Path path = Paths.get(expandedPath);
+        logger.info("Loading credentials from file", propertiesFilePath);
         
-        if (!Files.exists(path)) {
-            throw new IOException("Credentials file not found: " + expandedPath);
-        }
-        
-        Properties props = new Properties();
-        try (InputStream input = Files.newInputStream(path)) {
-            props.load(input);
-        }
-        
-        this.accessKey = props.getProperty("access_key");
-        
-        if (this.accessKey == null || this.accessKey.trim().isEmpty()) {
-            throw new IOException("access_key not found in properties file");
+        try {
+            // Expand ~ to user home directory
+            String expandedPath = propertiesFilePath.replaceFirst("^~", System.getProperty("user.home"));
+            Path path = Paths.get(expandedPath);
+            
+            if (!Files.exists(path)) {
+                IOException e = new IOException("Credentials file not found: " + expandedPath);
+                logger.error("Credentials file not found", expandedPath, e);
+                throw e;
+            }
+            
+            if (!Files.isReadable(path)) {
+                IOException e = new IOException("Credentials file is not readable: " + expandedPath);
+                logger.error("Credentials file not readable", expandedPath, e);
+                throw e;
+            }
+            
+            Properties props = new Properties();
+            try (InputStream input = Files.newInputStream(path)) {
+                props.load(input);
+            } catch (IOException e) {
+                logger.error("Failed to read properties file", expandedPath, e);
+                throw new IOException("Failed to read properties file: " + e.getMessage(), e);
+            }
+            
+            this.accessKey = props.getProperty("access_key");
+            
+            if (this.accessKey == null || this.accessKey.trim().isEmpty()) {
+                IOException e = new IOException("access_key not found or empty in properties file");
+                logger.error("Invalid credentials file", "Missing or empty access_key", e);
+                throw e;
+            }
+            
+            this.accessKey = this.accessKey.trim();
+            logger.info("Credentials loaded successfully", expandedPath);
+            
+        } catch (IOException e) {
+            logger.error("Failed to load credentials", propertiesFilePath, e);
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error loading credentials", propertiesFilePath, e);
+            throw new IOException("Unexpected error loading credentials: " + e.getMessage(), e);
         }
     }
     
@@ -122,45 +170,63 @@ public class ImageDownloader {
      * @throws IOException if the API request fails
      */
     public String[] searchImages(String query, int count) throws IOException {
+        logger.info("Searching for images", String.format("query=%s, count=%d", query, count));
+        
+        // Validate inputs
         if (accessKey == null || accessKey.trim().isEmpty()) {
-            throw new IOException("API key not set. Call setApiKey() or loadCredentials() first.");
+            IOException e = new IOException("API key not set. Call setApiKey() or loadCredentials() first.");
+            logger.error("API key not configured", query, e);
+            throw e;
         }
         
         if (query == null || query.trim().isEmpty()) {
+            logger.warning("Empty search query provided", "Returning empty results");
             return new String[0];
         }
         
         if (count <= 0) {
+            logger.warning("Invalid count provided", String.format("count=%d", count));
             return new String[0];
         }
         
-        // Check rate limit before making request
-        checkRateLimit();
-        
-        // Build the API URL
-        HttpUrl url = HttpUrl.parse(UNSPLASH_API_BASE + SEARCH_ENDPOINT)
-            .newBuilder()
-            .addQueryParameter("query", query)
-            .addQueryParameter("per_page", String.valueOf(Math.min(count, 30))) // API max is 30
-            .build();
-        
-        Request request = new Request.Builder()
-            .url(url)
-            .addHeader("Authorization", "Client-ID " + accessKey)
-            .addHeader("Accept-Version", "v1")
-            .build();
-        
-        // Execute request with retry logic
-        String[] results = executeWithRetry(() -> {
-            try (Response response = httpClient.newCall(request).execute()) {
-                return handleSearchResponse(response, count);
-            }
-        });
-        
-        // Increment request count after successful request
-        incrementRequestCount();
-        
-        return results;
+        try {
+            // Check rate limit before making request
+            checkRateLimit();
+            
+            // Build the API URL
+            HttpUrl url = HttpUrl.parse(UNSPLASH_API_BASE + SEARCH_ENDPOINT)
+                .newBuilder()
+                .addQueryParameter("query", query.trim())
+                .addQueryParameter("per_page", String.valueOf(Math.min(count, 30))) // API max is 30
+                .build();
+            
+            Request request = new Request.Builder()
+                .url(url)
+                .addHeader("Authorization", "Client-ID " + accessKey)
+                .addHeader("Accept-Version", "v1")
+                .build();
+            
+            // Execute request with retry logic
+            String[] results = executeWithRetry(() -> {
+                try (Response response = httpClient.newCall(request).execute()) {
+                    return handleSearchResponse(response, count, query);
+                }
+            }, "search images for: " + query);
+            
+            // Increment request count after successful request
+            incrementRequestCount();
+            
+            logger.info("Image search completed", 
+                String.format("query=%s, found=%d images", query, results.length));
+            return results;
+            
+        } catch (IOException e) {
+            logger.error("Image search failed", query, e);
+            throw e;
+        } catch (Exception e) {
+            logger.error("Unexpected error during image search", query, e);
+            throw new IOException("Unexpected error during image search: " + e.getMessage(), e);
+        }
     }
     
     /**
@@ -171,6 +237,7 @@ public class ImageDownloader {
         // If this is the first request, initialize the window
         if (rateLimitWindowStart == 0) {
             rateLimitWindowStart = System.currentTimeMillis();
+            logger.info("Rate limit tracking initialized");
             return;
         }
         
@@ -181,6 +248,7 @@ public class ImageDownloader {
         if (elapsedTime >= ONE_HOUR_MS) {
             requestCount = 0;
             rateLimitWindowStart = currentTime;
+            logger.info("Rate limit window reset", String.format("previousCount=%d", requestCount));
             return;
         }
         
@@ -189,6 +257,9 @@ public class ImageDownloader {
             long remainingTime = ONE_HOUR_MS - elapsedTime;
             long remainingMinutes = remainingTime / (60 * 1000);
             long remainingSeconds = (remainingTime % (60 * 1000)) / 1000;
+            
+            logger.warning("Rate limit reached, waiting for reset", 
+                String.format("requests=%d, waitTime=%dm %ds", requestCount, remainingMinutes, remainingSeconds));
             
             System.out.println();
             System.out.println("========================================");
@@ -205,6 +276,7 @@ public class ImageDownloader {
                 Thread.sleep(remainingTime);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                logger.error("Interrupted while waiting for rate limit reset", "", e);
                 throw new RuntimeException("Interrupted while waiting for rate limit reset", e);
             }
             
@@ -214,6 +286,7 @@ public class ImageDownloader {
             
             System.out.println("Rate limit window reset. Resuming downloads...");
             System.out.println();
+            logger.info("Rate limit wait completed, resuming operations");
         }
     }
     
@@ -242,23 +315,44 @@ public class ImageDownloader {
     /**
      * Handles the response from the Unsplash search API.
      */
-    private String[] handleSearchResponse(Response response, int count) throws IOException {
+    private String[] handleSearchResponse(Response response, int count, String query) throws IOException {
         if (!response.isSuccessful()) {
             if (response.code() == 429 || response.code() == 403) {
                 // Rate limit exceeded (429 is standard, but Unsplash also uses 403)
-                throw new RateLimitException("Unsplash API rate limit exceeded (code: " + response.code() + ")");
+                RateLimitException e = new RateLimitException("Unsplash API rate limit exceeded (code: " + response.code() + ")");
+                logger.warning("API rate limit exceeded", String.format("query=%s, code=%d", query, response.code()));
+                throw e;
             } else if (response.code() == 401) {
-                throw new IOException("Unauthorized: Invalid API key");
+                IOException e = new IOException("Unauthorized: Invalid API key");
+                logger.error("API authentication failed", String.format("query=%s, code=%d", query, response.code()), e);
+                throw e;
             } else {
-                throw new IOException("API request failed with code: " + response.code());
+                IOException e = new IOException("API request failed with code: " + response.code());
+                logger.error("API request failed", String.format("query=%s, code=%d", query, response.code()), e);
+                throw e;
             }
         }
         
-        String responseBody = response.body().string();
-        JsonObject jsonResponse = JsonParser.parseString(responseBody).getAsJsonObject();
+        String responseBody;
+        try {
+            responseBody = response.body().string();
+        } catch (IOException e) {
+            logger.error("Failed to read API response body", query, e);
+            throw new IOException("Failed to read API response: " + e.getMessage(), e);
+        }
+        
+        JsonObject jsonResponse;
+        try {
+            jsonResponse = JsonParser.parseString(responseBody).getAsJsonObject();
+        } catch (JsonSyntaxException e) {
+            logger.error("Invalid JSON in API response", query, e);
+            throw new IOException("Invalid JSON in API response: " + e.getMessage(), e);
+        }
+        
         JsonArray results = jsonResponse.getAsJsonArray("results");
         
         if (results == null || results.size() == 0) {
+            logger.info("No images found in API response", query);
             return new String[0];
         }
         
@@ -266,12 +360,18 @@ public class ImageDownloader {
         int limit = Math.min(count, results.size());
         
         for (int i = 0; i < limit; i++) {
-            JsonObject result = results.get(i).getAsJsonObject();
-            JsonObject urls = result.getAsJsonObject("urls");
-            
-            // Use "regular" size for good quality without huge file sizes
-            String imageUrl = urls.get("regular").getAsString();
-            imageUrls.add(imageUrl);
+            try {
+                JsonObject result = results.get(i).getAsJsonObject();
+                JsonObject urls = result.getAsJsonObject("urls");
+                
+                // Use "regular" size for good quality without huge file sizes
+                String imageUrl = urls.get("regular").getAsString();
+                imageUrls.add(imageUrl);
+            } catch (Exception e) {
+                logger.warning("Failed to parse image URL from result", 
+                    String.format("query=%s, index=%d, error=%s", query, i, e.getMessage()));
+                // Continue with other results
+            }
         }
         
         return imageUrls.toArray(new String[0]);
@@ -286,17 +386,29 @@ public class ImageDownloader {
      */
     public boolean downloadImage(String imageUrl, String localPath) {
         if (imageUrl == null || imageUrl.trim().isEmpty()) {
+            logger.warning("Empty image URL provided for download", localPath);
             return false;
         }
         
         if (localPath == null || localPath.trim().isEmpty()) {
+            logger.warning("Empty local path provided for download", imageUrl);
             return false;
         }
+        
+        logger.info("Starting image download", String.format("url=%s, path=%s", imageUrl, localPath));
         
         try {
             // Ensure parent directory exists
             Path path = Paths.get(localPath);
-            Files.createDirectories(path.getParent());
+            Path parentDir = path.getParent();
+            if (parentDir != null) {
+                try {
+                    Files.createDirectories(parentDir);
+                } catch (IOException e) {
+                    logger.error("Failed to create parent directory", parentDir.toString(), e);
+                    return false;
+                }
+            }
             
             Request request = new Request.Builder()
                 .url(imageUrl)
@@ -315,17 +427,26 @@ public class ImageDownloader {
                         
                         byte[] buffer = new byte[8192];
                         int bytesRead;
+                        long totalBytes = 0;
                         while ((bytesRead = inputStream.read(buffer)) != -1) {
                             outputStream.write(buffer, 0, bytesRead);
+                            totalBytes += bytesRead;
                         }
+                        
+                        logger.info("Image download completed", 
+                            String.format("path=%s, size=%d bytes", localPath, totalBytes));
                     }
                     
                     return true;
                 }
-            });
+            }, "download image: " + imageUrl);
             
         } catch (IOException e) {
-            System.err.println("Failed to download image from " + imageUrl + ": " + e.getMessage());
+            logger.error("Image download failed", String.format("url=%s, path=%s", imageUrl, localPath), e);
+            return false;
+        } catch (Exception e) {
+            logger.error("Unexpected error during image download", 
+                String.format("url=%s, path=%s", imageUrl, localPath), e);
             return false;
         }
     }
@@ -333,7 +454,7 @@ public class ImageDownloader {
     /**
      * Executes an operation with retry logic for handling transient failures.
      */
-    private <T> T executeWithRetry(RetryableOperation<T> operation) throws IOException {
+    private <T> T executeWithRetry(RetryableOperation<T> operation, String operationName) throws IOException {
         int attempts = 0;
         int rateLimitAttempts = 0;
         IOException lastException = null;
@@ -347,16 +468,19 @@ public class ImageDownloader {
                 attempts++;
                 lastException = e;
                 
+                logger.networkRetry(operationName, rateLimitAttempts, MAX_RATE_LIMIT_RETRIES, "Rate limit exceeded");
+                
                 if (rateLimitAttempts >= MAX_RATE_LIMIT_RETRIES) {
                     // Don't keep retrying rate limits - fail fast
-                    System.err.println("Rate limit exceeded after " + rateLimitAttempts + " attempts. " +
-                                     "Unsplash free tier allows 50 requests per hour.");
+                    logger.error("Rate limit retry limit exceeded", 
+                        String.format("operation=%s, attempts=%d", operationName, rateLimitAttempts), e);
                     throw e;
                 }
                 
                 if (attempts < maxRetries) {
                     int delayMs = RATE_LIMIT_RETRY_DELAY_MS * rateLimitAttempts; // Linear backoff
-                    System.err.println("Rate limit hit, waiting " + (delayMs / 1000) + " seconds before retry...");
+                    logger.info("Rate limit retry delay", 
+                        String.format("operation=%s, delayMs=%d", operationName, delayMs));
                     try {
                         Thread.sleep(delayMs);
                     } catch (InterruptedException ie) {
@@ -368,6 +492,8 @@ public class ImageDownloader {
                 // Other IO errors - retry with shorter delay
                 attempts++;
                 lastException = e;
+                
+                logger.networkRetry(operationName, attempts, maxRetries, e.getMessage());
                 
                 if (attempts < maxRetries) {
                     try {
@@ -381,6 +507,8 @@ public class ImageDownloader {
         }
         
         // All retries exhausted
+        logger.error("All retries exhausted", 
+            String.format("operation=%s, attempts=%d", operationName, attempts), lastException);
         throw lastException != null ? lastException : new IOException("Operation failed after " + maxRetries + " attempts");
     }
     

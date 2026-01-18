@@ -1,13 +1,13 @@
 package com.icandy.run;
 
 import com.icandy.build.AssociationManager;
+import com.icandy.common.Logger;
 import processing.core.PApplet;
 import processing.core.PImage;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.logging.Logger;
 
 /**
  * ImageDisplayManager manages the display and swapping of images on screen.
@@ -27,7 +27,7 @@ import java.util.logging.Logger;
  */
 public class ImageDisplayManager {
     
-    private static final Logger LOGGER = Logger.getLogger(ImageDisplayManager.class.getName());
+    private static final Logger LOGGER = new Logger(ImageDisplayManager.class);
     private static final int DEFAULT_SIMULTANEOUS_IMAGES = 3;
     
     private final PApplet parent;
@@ -91,6 +91,13 @@ public class ImageDisplayManager {
      * @param associationManager The association manager for word-image mappings
      */
     public ImageDisplayManager(PApplet parent, AssociationManager associationManager) {
+        if (parent == null) {
+            throw new IllegalArgumentException("Parent PApplet cannot be null");
+        }
+        if (associationManager == null) {
+            throw new IllegalArgumentException("Association manager cannot be null");
+        }
+        
         this.parent = parent;
         this.associationManager = associationManager;
         this.simultaneousImageCount = DEFAULT_SIMULTANEOUS_IMAGES;
@@ -104,6 +111,8 @@ public class ImageDisplayManager {
         
         // Detect if we're in a test environment (PApplet not fully initialized)
         this.isTestMode = (parent.g == null);
+        
+        LOGGER.info("ImageDisplayManager initialized");
     }
     
     /**
@@ -114,9 +123,15 @@ public class ImageDisplayManager {
     public void setLayoutEngine(LayoutEngine layoutEngine) {
         this.layoutEngine = layoutEngine;
         
+        LOGGER.info("Layout engine set", layoutEngine != null ? layoutEngine.getClass().getSimpleName() : "null");
+        
         // Recalculate layout if we have current images
         if (currentImageInfos.length > 0) {
-            calculateLayoutWithEngine();
+            try {
+                calculateLayoutWithEngine();
+            } catch (Exception e) {
+                LOGGER.error("Error recalculating layout after engine change", e);
+            }
         }
     }
     
@@ -127,6 +142,7 @@ public class ImageDisplayManager {
      */
     public void setTransitionEngine(TransitionEngine transitionEngine) {
         this.transitionEngine = transitionEngine;
+        LOGGER.info("Transition engine set", transitionEngine != null ? transitionEngine.getClass().getSimpleName() : "null");
     }
     
     /**
@@ -136,6 +152,7 @@ public class ImageDisplayManager {
      */
     public void setVisualEffectsManager(VisualEffectsManager visualEffectsManager) {
         this.visualEffectsManager = visualEffectsManager;
+        LOGGER.info("Visual effects manager set", visualEffectsManager != null ? visualEffectsManager.getClass().getSimpleName() : "null");
     }
     
     /**
@@ -144,27 +161,39 @@ public class ImageDisplayManager {
      * @param deltaTime Time elapsed since last update in milliseconds
      */
     public void update(float deltaTime) {
-        // Update layout engine for transitions
-        if (layoutEngine != null) {
-            layoutEngine.update(deltaTime);
-            
-            // Get updated positions from layout engine
-            ImagePosition[] updatedPositions = layoutEngine.getCurrentPositions();
-            if (updatedPositions != null && updatedPositions.length == displaySlots.size()) {
-                for (int i = 0; i < displaySlots.size() && i < updatedPositions.length; i++) {
-                    displaySlots.get(i).position = updatedPositions[i];
+        try {
+            // Update layout engine for transitions
+            if (layoutEngine != null) {
+                layoutEngine.update(deltaTime);
+                
+                // Get updated positions from layout engine
+                ImagePosition[] updatedPositions = layoutEngine.getCurrentPositions();
+                if (updatedPositions != null && updatedPositions.length == displaySlots.size()) {
+                    for (int i = 0; i < displaySlots.size() && i < updatedPositions.length; i++) {
+                        displaySlots.get(i).position = updatedPositions[i];
+                    }
                 }
             }
+        } catch (Exception e) {
+            LOGGER.warning("Error updating layout engine: " + e.getMessage());
         }
         
-        // Update transition engine
-        if (transitionEngine != null) {
-            transitionEngine.update(deltaTime);
+        try {
+            // Update transition engine
+            if (transitionEngine != null) {
+                transitionEngine.update(deltaTime);
+            }
+        } catch (Exception e) {
+            LOGGER.warning("Error updating transition engine: " + e.getMessage());
         }
         
-        // Update visual effects (particles, etc.)
-        if (visualEffectsManager != null) {
-            visualEffectsManager.updateParticles(deltaTime);
+        try {
+            // Update visual effects (particles, etc.)
+            if (visualEffectsManager != null) {
+                visualEffectsManager.updateParticles(deltaTime);
+            }
+        } catch (Exception e) {
+            LOGGER.warning("Error updating visual effects: " + e.getMessage());
         }
     }
     
@@ -181,34 +210,60 @@ public class ImageDisplayManager {
      */
     public void setImagesForPhrase(String[] words) {
         if (words == null || words.length == 0) {
+            LOGGER.info("No words provided for phrase, clearing display");
             this.currentWords = new String[0];
             this.wordToImagePaths.clear();
             this.displaySlots.clear();
             return;
         }
         
+        LOGGER.info("Setting images for phrase", "wordCount=" + words.length);
+        
         this.currentWords = words;
         this.wordToImagePaths.clear();
         
         // Collect image paths for each word
+        int wordsWithImages = 0;
         for (String word : words) {
-            String[] imagePaths = associationManager.getImagesForWord(word);
-            if (imagePaths.length > 0) {
-                wordToImagePaths.put(word, Arrays.asList(imagePaths));
+            if (word == null || word.trim().isEmpty()) {
+                LOGGER.warning("Skipping null or empty word in phrase");
+                continue;
+            }
+            
+            try {
+                String[] imagePaths = associationManager.getImagesForWord(word);
+                if (imagePaths.length > 0) {
+                    wordToImagePaths.put(word, Arrays.asList(imagePaths));
+                    wordsWithImages++;
+                } else {
+                    LOGGER.warning("No images found for word: " + word);
+                }
+            } catch (Exception e) {
+                LOGGER.error("Error getting images for word: " + word, e);
             }
         }
+        
+        LOGGER.info("Found images for " + wordsWithImages + " out of " + words.length + " words");
         
         // Preload images for words that aren't already cached
         for (Map.Entry<String, List<String>> entry : wordToImagePaths.entrySet()) {
             String word = entry.getKey();
             // Only preload if this word isn't already in the cache
             if (!imageCache.containsKey(word) || imageCache.get(word).isEmpty()) {
-                preloadImages(entry.getValue().toArray(new String[0]));
+                try {
+                    preloadImages(entry.getValue().toArray(new String[0]));
+                } catch (Exception e) {
+                    LOGGER.error("Error preloading images for word: " + word, e);
+                }
             }
         }
         
         // Initialize display slots
-        initializeDisplaySlots();
+        try {
+            initializeDisplaySlots();
+        } catch (Exception e) {
+            LOGGER.error("Error initializing display slots", e);
+        }
     }
     
     /**
@@ -392,15 +447,27 @@ public class ImageDisplayManager {
             return;
         }
         
-        for (DisplaySlot slot : displaySlots) {
-            if (slot.image != null && slot.position != null) {
-                displayImageWithEffects(slot);
+        try {
+            for (DisplaySlot slot : displaySlots) {
+                if (slot.image != null && slot.position != null) {
+                    try {
+                        displayImageWithEffects(slot);
+                    } catch (Exception e) {
+                        LOGGER.warning("Error displaying image for word: " + slot.word + ", " + e.getMessage());
+                    }
+                }
             }
-        }
-        
-        // Render particles if visual effects manager is available
-        if (visualEffectsManager != null) {
-            visualEffectsManager.renderParticles();
+            
+            // Render particles if visual effects manager is available
+            if (visualEffectsManager != null) {
+                try {
+                    visualEffectsManager.renderParticles();
+                } catch (Exception e) {
+                    LOGGER.warning("Error rendering particles: " + e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error in displayCurrentImages", e);
         }
     }
     
@@ -410,56 +477,103 @@ public class ImageDisplayManager {
      * @param slot The display slot containing image and position information
      */
     private void displayImageWithEffects(DisplaySlot slot) {
+        if (slot == null || slot.image == null || slot.position == null) {
+            LOGGER.warning("Invalid display slot - skipping image rendering");
+            return;
+        }
+        
         PImage imageToRender = slot.image;
         ImagePosition pos = slot.position;
         
-        // Apply visual effects if available
-        if (visualEffectsManager != null) {
-            imageToRender = visualEffectsManager.applyEffects(slot.image);
+        try {
+            // Apply visual effects if available
+            if (visualEffectsManager != null) {
+                try {
+                    imageToRender = visualEffectsManager.applyEffects(slot.image);
+                } catch (Exception e) {
+                    LOGGER.warning("Error applying visual effects, using original image: " + e.getMessage());
+                    imageToRender = slot.image;
+                }
+            }
+            
+            // Validate image dimensions
+            if (imageToRender.width <= 0 || imageToRender.height <= 0) {
+                LOGGER.warning("Invalid image dimensions: " + imageToRender.width + "x" + imageToRender.height);
+                return;
+            }
+            
+            // Validate position values
+            if (Float.isNaN(pos.x) || Float.isNaN(pos.y) || Float.isNaN(pos.width) || Float.isNaN(pos.height)) {
+                LOGGER.warning("Invalid position values - NaN detected");
+                return;
+            }
+            
+            // Save current transformation matrix
+            parent.pushMatrix();
+            
+            // Apply transformations with bounds checking
+            float centerX = pos.x + pos.width / 2;
+            float centerY = pos.y + pos.height / 2;
+            
+            if (Float.isFinite(centerX) && Float.isFinite(centerY)) {
+                parent.translate(centerX, centerY);
+            } else {
+                LOGGER.warning("Invalid center coordinates, skipping translation");
+            }
+            
+            if (pos.rotation != 0 && Float.isFinite(pos.rotation)) {
+                parent.rotate(PApplet.radians(pos.rotation));
+            }
+            
+            if (pos.scale != 1.0f && Float.isFinite(pos.scale) && pos.scale > 0) {
+                parent.scale(pos.scale);
+            }
+            
+            // Apply opacity with bounds checking
+            if (pos.opacity < 1.0f && pos.opacity >= 0) {
+                parent.tint(255, pos.opacity * 255);
+            }
+            
+            // Calculate aspect-ratio-preserving dimensions
+            float imageAspect = (float) imageToRender.width / imageToRender.height;
+            float slotAspect = pos.width / pos.height;
+            
+            float drawWidth, drawHeight;
+            if (imageAspect > slotAspect) {
+                // Image is wider - fit to width
+                drawWidth = pos.width;
+                drawHeight = pos.width / imageAspect;
+            } else {
+                // Image is taller - fit to height
+                drawHeight = pos.height;
+                drawWidth = pos.height * imageAspect;
+            }
+            
+            // Validate draw dimensions
+            if (drawWidth <= 0 || drawHeight <= 0 || !Float.isFinite(drawWidth) || !Float.isFinite(drawHeight)) {
+                LOGGER.warning("Invalid draw dimensions: " + drawWidth + "x" + drawHeight);
+                return;
+            }
+            
+            // Draw image centered at origin (due to translate)
+            parent.image(imageToRender, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+            
+            // Reset tint
+            parent.noTint();
+            
+            // Restore transformation matrix
+            parent.popMatrix();
+            
+        } catch (Exception e) {
+            LOGGER.error("Error displaying image with effects", e);
+            // Restore matrix in case of error
+            try {
+                parent.popMatrix();
+            } catch (Exception matrixError) {
+                // Matrix stack might be corrupted, log but continue
+                LOGGER.warning("Error restoring matrix after image display error");
+            }
         }
-        
-        // Save current transformation matrix
-        parent.pushMatrix();
-        
-        // Apply transformations
-        parent.translate(pos.x + pos.width / 2, pos.y + pos.height / 2);
-        
-        if (pos.rotation != 0) {
-            parent.rotate(parent.radians(pos.rotation));
-        }
-        
-        if (pos.scale != 1.0f) {
-            parent.scale(pos.scale);
-        }
-        
-        // Apply opacity
-        if (pos.opacity < 1.0f) {
-            parent.tint(255, pos.opacity * 255);
-        }
-        
-        // Calculate aspect-ratio-preserving dimensions
-        float imageAspect = (float) imageToRender.width / imageToRender.height;
-        float slotAspect = pos.width / pos.height;
-        
-        float drawWidth, drawHeight;
-        if (imageAspect > slotAspect) {
-            // Image is wider - fit to width
-            drawWidth = pos.width;
-            drawHeight = pos.width / imageAspect;
-        } else {
-            // Image is taller - fit to height
-            drawHeight = pos.height;
-            drawWidth = pos.height * imageAspect;
-        }
-        
-        // Draw image centered at origin (due to translate)
-        parent.image(imageToRender, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
-        
-        // Reset tint
-        parent.noTint();
-        
-        // Restore transformation matrix
-        parent.popMatrix();
     }
     
     /**
@@ -591,30 +705,45 @@ public class ImageDisplayManager {
      */
     public void preloadImages(String[] imagePaths) {
         if (imagePaths == null || imagePaths.length == 0) {
+            LOGGER.warning("No image paths provided for preloading");
             return;
         }
+        
+        LOGGER.info("Preloading " + imagePaths.length + " images");
         
         // Group paths by word (extract word from filename)
         Map<String, List<String>> pathsByWord = new HashMap<>();
         
         for (String imagePath : imagePaths) {
             if (imagePath == null || imagePath.trim().isEmpty()) {
+                LOGGER.warning("Skipping null or empty image path");
                 continue;
             }
             
             // Check if file exists
-            if (!Files.exists(Path.of(imagePath))) {
-                LOGGER.warning("Image file not found: " + imagePath);
+            try {
+                if (!Files.exists(Path.of(imagePath))) {
+                    LOGGER.warning("Image file not found: " + imagePath);
+                    continue;
+                }
+            } catch (Exception e) {
+                LOGGER.warning("Error checking file existence: " + imagePath + ", " + e.getMessage());
                 continue;
             }
             
             // Extract word from path (e.g., "data/images/hello_1.jpg" -> "hello")
-            String word = extractWordFromPath(imagePath);
-            
-            pathsByWord.computeIfAbsent(word, k -> new ArrayList<>()).add(imagePath);
+            try {
+                String word = extractWordFromPath(imagePath);
+                pathsByWord.computeIfAbsent(word, k -> new ArrayList<>()).add(imagePath);
+            } catch (Exception e) {
+                LOGGER.warning("Error extracting word from path: " + imagePath + ", " + e.getMessage());
+            }
         }
         
         // Load images for each word
+        int loadedCount = 0;
+        int errorCount = 0;
+        
         for (Map.Entry<String, List<String>> entry : pathsByWord.entrySet()) {
             String word = entry.getKey();
             List<String> paths = entry.getValue();
@@ -636,15 +765,20 @@ public class ImageDisplayManager {
                         PImage image = parent.loadImage(path);
                         if (image != null && image.width > 0) {
                             images.add(image);
+                            loadedCount++;
                         } else {
-                            LOGGER.warning("Failed to load image: " + path);
+                            LOGGER.warning("Failed to load image (null or zero size): " + path);
+                            errorCount++;
                         }
                     } catch (Exception e) {
-                        LOGGER.warning("Error loading image " + path + ": " + e.getMessage());
+                        LOGGER.error("Error loading image: " + path, e);
+                        errorCount++;
                     }
                 }
             }
         }
+        
+        LOGGER.info("Image preloading completed", "loaded=" + loadedCount + ", errors=" + errorCount);
     }
     
     /**
@@ -693,14 +827,20 @@ public class ImageDisplayManager {
      */
     public void setSimultaneousImageCount(int count) {
         if (count <= 0) {
+            LOGGER.warning("Invalid simultaneous image count: " + count + ", using default");
             this.simultaneousImageCount = DEFAULT_SIMULTANEOUS_IMAGES;
         } else {
             this.simultaneousImageCount = count;
+            LOGGER.info("Simultaneous image count set to " + count);
         }
         
         // Reinitialize display slots if we have current words
         if (currentWords.length > 0) {
-            initializeDisplaySlots();
+            try {
+                initializeDisplaySlots();
+            } catch (Exception e) {
+                LOGGER.error("Error reinitializing display slots after count change", e);
+            }
         }
     }
     

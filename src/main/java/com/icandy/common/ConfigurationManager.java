@@ -2,7 +2,9 @@ package com.icandy.common;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.icandy.run.EasingFunction;
 import com.icandy.run.LayoutConfig;
+import com.icandy.run.TransitionConfig;
 import com.icandy.run.VisualEffectsConfig;
 
 import java.io.IOException;
