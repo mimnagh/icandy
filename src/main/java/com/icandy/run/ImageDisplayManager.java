@@ -14,14 +14,16 @@ import java.util.logging.Logger;
  * 
  * This class handles:
  * - Loading and caching PImage objects
- * - Displaying images in visually appealing layouts
- * - Swapping images on beat detection
+ * - Displaying images using configurable layout algorithms via LayoutEngine
+ * - Swapping images with animated transitions via TransitionEngine
+ * - Applying visual effects via VisualEffectsManager
  * - Tracking which images have been shown
  * - Cycling through available images
  * - Handling missing images gracefully
  * - Selecting subset of images when phrase has more content words than display slots
+ * - Frame-based animation system with delta time
  * 
- * Requirements: 4.3, 4.4, 5.2, 5.3, 5.4
+ * Requirements: 4.3, 4.4, 5.2, 5.3, 5.4, 9.1, 10.1, 12.6, 7.3
  */
 public class ImageDisplayManager {
     
@@ -32,6 +34,11 @@ public class ImageDisplayManager {
     private final AssociationManager associationManager;
     private final boolean isTestMode;
     
+    // Engine integrations
+    private LayoutEngine layoutEngine;
+    private TransitionEngine transitionEngine;
+    private VisualEffectsManager visualEffectsManager;
+    
     // Configuration
     private int simultaneousImageCount;
     
@@ -41,22 +48,39 @@ public class ImageDisplayManager {
     private Map<String, List<PImage>> imageCache;
     private Map<String, Integer> currentImageIndices;
     private List<DisplaySlot> displaySlots;
+    private ImageInfo[] currentImageInfos;
+    private ImagePosition[] currentPositions;
     
     /**
-     * Represents a display slot for an image.
+     * Represents a display slot for an image with enhanced state tracking.
      */
     private static class DisplaySlot {
         String word;
         PImage image;
-        int x, y, width, height;
+        ImageInfo imageInfo;
+        ImagePosition position;
         
+        DisplaySlot(String word, PImage image, ImageInfo imageInfo, ImagePosition position) {
+            this.word = word;
+            this.image = image;
+            this.imageInfo = imageInfo;
+            this.position = position;
+        }
+        
+        // Legacy constructor for backward compatibility
         DisplaySlot(String word, PImage image, int x, int y, int width, int height) {
             this.word = word;
             this.image = image;
-            this.x = x;
-            this.y = y;
-            this.width = width;
-            this.height = height;
+            this.imageInfo = new ImageInfo(image, word, "");
+            this.position = new ImagePosition();
+            this.position.x = x;
+            this.position.y = y;
+            this.position.width = width;
+            this.position.height = height;
+            this.position.scale = 1.0f;
+            this.position.opacity = 1.0f;
+            this.position.rotation = 0.0f;
+            this.position.timestamp = System.currentTimeMillis();
         }
     }
     
@@ -75,9 +99,73 @@ public class ImageDisplayManager {
         this.imageCache = new HashMap<>();
         this.currentImageIndices = new HashMap<>();
         this.displaySlots = new ArrayList<>();
+        this.currentImageInfos = new ImageInfo[0];
+        this.currentPositions = new ImagePosition[0];
         
         // Detect if we're in a test environment (PApplet not fully initialized)
         this.isTestMode = (parent.g == null);
+    }
+    
+    /**
+     * Sets the LayoutEngine for configurable image positioning.
+     * 
+     * @param layoutEngine The layout engine to use for positioning images
+     */
+    public void setLayoutEngine(LayoutEngine layoutEngine) {
+        this.layoutEngine = layoutEngine;
+        
+        // Recalculate layout if we have current images
+        if (currentImageInfos.length > 0) {
+            calculateLayoutWithEngine();
+        }
+    }
+    
+    /**
+     * Sets the TransitionEngine for animated image swapping.
+     * 
+     * @param transitionEngine The transition engine to use for image swaps
+     */
+    public void setTransitionEngine(TransitionEngine transitionEngine) {
+        this.transitionEngine = transitionEngine;
+    }
+    
+    /**
+     * Sets the VisualEffectsManager for image enhancement.
+     * 
+     * @param visualEffectsManager The visual effects manager to use for image effects
+     */
+    public void setVisualEffectsManager(VisualEffectsManager visualEffectsManager) {
+        this.visualEffectsManager = visualEffectsManager;
+    }
+    
+    /**
+     * Updates the display manager each frame for animations and transitions.
+     * 
+     * @param deltaTime Time elapsed since last update in milliseconds
+     */
+    public void update(float deltaTime) {
+        // Update layout engine for transitions
+        if (layoutEngine != null) {
+            layoutEngine.update(deltaTime);
+            
+            // Get updated positions from layout engine
+            ImagePosition[] updatedPositions = layoutEngine.getCurrentPositions();
+            if (updatedPositions != null && updatedPositions.length == displaySlots.size()) {
+                for (int i = 0; i < displaySlots.size() && i < updatedPositions.length; i++) {
+                    displaySlots.get(i).position = updatedPositions[i];
+                }
+            }
+        }
+        
+        // Update transition engine
+        if (transitionEngine != null) {
+            transitionEngine.update(deltaTime);
+        }
+        
+        // Update visual effects (particles, etc.)
+        if (visualEffectsManager != null) {
+            visualEffectsManager.updateParticles(deltaTime);
+        }
     }
     
     /**
@@ -125,6 +213,7 @@ public class ImageDisplayManager {
     
     /**
      * Initializes display slots by selecting which words/images to display.
+     * Uses LayoutEngine for positioning if available, falls back to grid layout.
      * 
      * Image Selection Strategy:
      * - When phrase has N content words and display shows M images (where N > M):
@@ -141,6 +230,8 @@ public class ImageDisplayManager {
         List<String> wordsWithImages = new ArrayList<>(wordToImagePaths.keySet());
         
         if (wordsWithImages.isEmpty()) {
+            currentImageInfos = new ImageInfo[0];
+            currentPositions = new ImagePosition[0];
             return;
         }
         
@@ -153,8 +244,53 @@ public class ImageDisplayManager {
         // Select words to display
         List<String> selectedWords = selectWordsForDisplay(wordsWithImages);
         
-        // Calculate layout
-        calculateLayout(selectedWords);
+        // Create ImageInfo objects for selected words
+        createImageInfos(selectedWords);
+        
+        // Calculate layout using LayoutEngine or fallback to grid
+        if (layoutEngine != null) {
+            calculateLayoutWithEngine();
+        } else {
+            calculateLayoutFallback(selectedWords);
+        }
+    }
+    
+    /**
+     * Creates ImageInfo objects for the selected words.
+     * 
+     * @param selectedWords List of words to create ImageInfo objects for
+     */
+    private void createImageInfos(List<String> selectedWords) {
+        currentImageInfos = new ImageInfo[selectedWords.size()];
+        
+        for (int i = 0; i < selectedWords.size(); i++) {
+            String word = selectedWords.get(i);
+            PImage image = getCurrentImageForWord(word);
+            
+            // Create ImageInfo with image metadata
+            currentImageInfos[i] = new ImageInfo(image, word, "");
+        }
+    }
+    
+    /**
+     * Calculates layout using the LayoutEngine.
+     */
+    private void calculateLayoutWithEngine() {
+        if (layoutEngine == null || currentImageInfos.length == 0) {
+            return;
+        }
+        
+        // Calculate positions using layout engine
+        currentPositions = layoutEngine.calculateLayout(currentImageInfos);
+        
+        // Create display slots from calculated positions
+        displaySlots.clear();
+        for (int i = 0; i < currentImageInfos.length && i < currentPositions.length; i++) {
+            ImageInfo imageInfo = currentImageInfos[i];
+            ImagePosition position = currentPositions[i];
+            
+            displaySlots.add(new DisplaySlot(imageInfo.word, imageInfo.image, imageInfo, position));
+        }
     }
     
     /**
@@ -186,11 +322,11 @@ public class ImageDisplayManager {
     }
     
     /**
-     * Calculates the layout for displaying images in a grid.
+     * Calculates the layout for displaying images in a grid (fallback when no LayoutEngine).
      * 
      * @param selectedWords List of words to display
      */
-    private void calculateLayout(List<String> selectedWords) {
+    private void calculateLayoutFallback(List<String> selectedWords) {
         if (selectedWords.isEmpty()) {
             return;
         }
@@ -213,7 +349,7 @@ public class ImageDisplayManager {
         int imageWidth = slotWidth - (2 * padding);
         int imageHeight = slotHeight - (2 * padding);
         
-        // Create display slots
+        // Create display slots with legacy constructor
         for (int i = 0; i < selectedWords.size(); i++) {
             String word = selectedWords.get(i);
             int col = i % cols;
@@ -248,7 +384,8 @@ public class ImageDisplayManager {
     /**
      * Displays the currently loaded images on screen.
      * 
-     * Images are rendered in their calculated positions with appropriate scaling.
+     * Images are rendered using their calculated positions with appropriate scaling.
+     * Visual effects are applied if VisualEffectsManager is available.
      */
     public void displayCurrentImages() {
         if (isTestMode || displaySlots.isEmpty()) {
@@ -256,29 +393,73 @@ public class ImageDisplayManager {
         }
         
         for (DisplaySlot slot : displaySlots) {
-            if (slot.image != null) {
-                // Calculate aspect-ratio-preserving dimensions
-                float imageAspect = (float) slot.image.width / slot.image.height;
-                float slotAspect = (float) slot.width / slot.height;
-                
-                int drawWidth, drawHeight;
-                if (imageAspect > slotAspect) {
-                    // Image is wider - fit to width
-                    drawWidth = slot.width;
-                    drawHeight = (int) (slot.width / imageAspect);
-                } else {
-                    // Image is taller - fit to height
-                    drawHeight = slot.height;
-                    drawWidth = (int) (slot.height * imageAspect);
-                }
-                
-                // Center the image in the slot
-                int drawX = slot.x + (slot.width - drawWidth) / 2;
-                int drawY = slot.y + (slot.height - drawHeight) / 2;
-                
-                parent.image(slot.image, drawX, drawY, drawWidth, drawHeight);
+            if (slot.image != null && slot.position != null) {
+                displayImageWithEffects(slot);
             }
         }
+        
+        // Render particles if visual effects manager is available
+        if (visualEffectsManager != null) {
+            visualEffectsManager.renderParticles();
+        }
+    }
+    
+    /**
+     * Displays a single image with position and visual effects.
+     * 
+     * @param slot The display slot containing image and position information
+     */
+    private void displayImageWithEffects(DisplaySlot slot) {
+        PImage imageToRender = slot.image;
+        ImagePosition pos = slot.position;
+        
+        // Apply visual effects if available
+        if (visualEffectsManager != null) {
+            imageToRender = visualEffectsManager.applyEffects(slot.image);
+        }
+        
+        // Save current transformation matrix
+        parent.pushMatrix();
+        
+        // Apply transformations
+        parent.translate(pos.x + pos.width / 2, pos.y + pos.height / 2);
+        
+        if (pos.rotation != 0) {
+            parent.rotate(parent.radians(pos.rotation));
+        }
+        
+        if (pos.scale != 1.0f) {
+            parent.scale(pos.scale);
+        }
+        
+        // Apply opacity
+        if (pos.opacity < 1.0f) {
+            parent.tint(255, pos.opacity * 255);
+        }
+        
+        // Calculate aspect-ratio-preserving dimensions
+        float imageAspect = (float) imageToRender.width / imageToRender.height;
+        float slotAspect = pos.width / pos.height;
+        
+        float drawWidth, drawHeight;
+        if (imageAspect > slotAspect) {
+            // Image is wider - fit to width
+            drawWidth = pos.width;
+            drawHeight = pos.width / imageAspect;
+        } else {
+            // Image is taller - fit to height
+            drawHeight = pos.height;
+            drawWidth = pos.height * imageAspect;
+        }
+        
+        // Draw image centered at origin (due to translate)
+        parent.image(imageToRender, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+        
+        // Reset tint
+        parent.noTint();
+        
+        // Restore transformation matrix
+        parent.popMatrix();
     }
     
     /**
@@ -286,21 +467,28 @@ public class ImageDisplayManager {
      * 
      * This method:
      * - Selects images that have not been recently displayed for each word
+     * - Uses TransitionEngine for animated transitions if available
      * - Updates the display slots with new images
      * - Cycles through available images when all have been shown
      * 
-     * Requirements: 5.3, 5.4, 5.5
+     * Requirements: 5.3, 5.4, 5.5, 10.1, 10.7
      */
     public void swapImages() {
         if (displaySlots.isEmpty()) {
             return;
         }
         
+        // Collect new images for swapping
+        List<PImage> newImages = new ArrayList<>();
+        List<String> newWords = new ArrayList<>();
+        
         for (DisplaySlot slot : displaySlots) {
             String word = slot.word;
             List<PImage> images = imageCache.get(word);
             
             if (images == null || images.isEmpty()) {
+                newImages.add(slot.image); // Keep current image
+                newWords.add(word);
                 continue;
             }
             
@@ -311,9 +499,85 @@ public class ImageDisplayManager {
                 int nextIndex = (currentIndex + 1) % images.size();
                 currentImageIndices.put(word, nextIndex);
                 
-                // Update the slot with the new image
-                slot.image = images.get(nextIndex);
+                newImages.add(images.get(nextIndex));
+                newWords.add(word);
+            } else {
+                newImages.add(slot.image); // Keep current image
+                newWords.add(word);
             }
+        }
+        
+        // Apply transition if TransitionEngine is available
+        if (transitionEngine != null && !newImages.isEmpty()) {
+            swapImagesWithTransition(newImages, newWords);
+        } else {
+            swapImagesInstant(newImages, newWords);
+        }
+    }
+    
+    /**
+     * Swaps images using animated transitions via TransitionEngine.
+     * 
+     * @param newImages List of new images to display
+     * @param newWords List of words corresponding to new images
+     */
+    private void swapImagesWithTransition(List<PImage> newImages, List<String> newWords) {
+        // Create new ImageInfo objects for transition
+        ImageInfo[] newImageInfos = new ImageInfo[newImages.size()];
+        for (int i = 0; i < newImages.size(); i++) {
+            newImageInfos[i] = new ImageInfo(newImages.get(i), newWords.get(i), "");
+        }
+        
+        // Calculate new positions if layout engine is available
+        ImagePosition[] newPositions = null;
+        if (layoutEngine != null) {
+            newPositions = layoutEngine.calculateLayout(newImageInfos);
+        }
+        
+        // Start transitions for each image
+        for (int i = 0; i < displaySlots.size() && i < newImages.size(); i++) {
+            DisplaySlot slot = displaySlots.get(i);
+            PImage newImage = newImages.get(i);
+            String newWord = newWords.get(i);
+            
+            // Create new ImageInfo and position
+            ImageInfo newImageInfo = new ImageInfo(newImage, newWord, "");
+            ImagePosition newPosition = (newPositions != null && i < newPositions.length) 
+                ? newPositions[i] 
+                : slot.position.copy(); // Use current position if no new layout
+            
+            // Start transition via TransitionEngine
+            ImageState newState = new ImageState(newPosition);
+            transitionEngine.startImageTransition(newImageInfo, newState);
+            
+            // Update slot immediately (transition engine will handle animation)
+            slot.image = newImage;
+            slot.word = newWord;
+            slot.imageInfo = newImageInfo;
+            // Position will be updated by TransitionEngine via update() method
+        }
+        
+        // Update current state
+        currentImageInfos = newImageInfos;
+        if (newPositions != null) {
+            currentPositions = newPositions;
+        }
+    }
+    
+    /**
+     * Swaps images instantly without transitions (fallback).
+     * 
+     * @param newImages List of new images to display
+     * @param newWords List of words corresponding to new images
+     */
+    private void swapImagesInstant(List<PImage> newImages, List<String> newWords) {
+        for (int i = 0; i < displaySlots.size() && i < newImages.size(); i++) {
+            DisplaySlot slot = displaySlots.get(i);
+            
+            // Update the slot with the new image
+            slot.image = newImages.get(i);
+            slot.word = newWords.get(i);
+            slot.imageInfo = new ImageInfo(newImages.get(i), newWords.get(i), "");
         }
     }
     
@@ -476,6 +740,8 @@ public class ImageDisplayManager {
         this.imageCache.clear();
         this.currentImageIndices.clear();
         this.displaySlots.clear();
+        this.currentImageInfos = new ImageInfo[0];
+        this.currentPositions = new ImagePosition[0];
     }
     
     /**

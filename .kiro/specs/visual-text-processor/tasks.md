@@ -533,29 +533,29 @@ This implementation plan breaks down the iCandy visual text processor into discr
     - Test parameter validation and error handling
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8_
 
-- [ ] 17. Enhance ImageDisplayManager with new engines
-  - [ ] 17.1 Update ImageDisplayManager to use LayoutEngine
+- [x] 17. Enhance ImageDisplayManager with new engines
+  - [x] 17.1 Update ImageDisplayManager to use LayoutEngine
     - Integrate LayoutEngine for image positioning
     - Replace hardcoded grid layout with configurable algorithms
     - Add layout algorithm switching support
     - Update displayCurrentImages() to use calculated positions
     - _Requirements: 9.1, 9.6, 9.7_
 
-  - [ ] 17.2 Update ImageDisplayManager to use TransitionEngine
+  - [x] 17.2 Update ImageDisplayManager to use TransitionEngine
     - Integrate TransitionEngine for image swapping
     - Replace instant image swaps with animated transitions
     - Add transition effect configuration support
     - Update swapImages() to use transition effects
     - _Requirements: 10.1, 10.7_
 
-  - [ ] 17.3 Update ImageDisplayManager to use VisualEffectsManager
+  - [x] 17.3 Update ImageDisplayManager to use VisualEffectsManager
     - Integrate VisualEffectsManager for image enhancement
     - Apply visual effects to all displayed images
     - Add visual effects configuration support
     - Update displayCurrentImages() to apply effects
     - _Requirements: 12.6_
 
-  - [ ] 17.4 Implement frame-based animation system
+  - [x] 17.4 Implement frame-based animation system
     - Add update() method with delta time parameter
     - Update all animations and transitions each frame
     - Maintain smooth 60 FPS performance
